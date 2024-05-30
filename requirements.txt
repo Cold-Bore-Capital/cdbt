@@ -1,0 +1,7 @@
+click
+pyperclip
+snowflake-connector-python
+python-dotenv
+openai
+sqlfluff
+sqlfluff-templater-dbt
