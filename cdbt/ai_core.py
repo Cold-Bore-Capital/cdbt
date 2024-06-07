@@ -54,7 +54,8 @@ class AiCore:
         # This will get the path of the model. note, that unit tests show up as models, so must be excluded via the folder.
         #
         args = ['--select', model_name, '--exclude',
-                'path:tests/* resource_type:test']
+                'path:tests/* resource_type:test',
+                '--output-keys', 'original_file_path']
         model_ls_json = cdbt_main.dbt_ls_to_json(args)
         file_path = model_ls_json[0]['original_file_path']
         return file_path

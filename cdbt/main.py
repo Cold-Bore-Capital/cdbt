@@ -360,6 +360,7 @@ class ColdBoreCapitalDBT:
         else:
             args = []
 
+        args = args + ['--output-keys', 'name resource_type config']
         models_json = self.dbt_ls_to_json(args)
         if not full_refresh:
             for model in models_json:
@@ -370,7 +371,7 @@ class ColdBoreCapitalDBT:
         return full_refresh
 
     def dbt_ls_to_json(self, args):
-        cmd = ['dbt', 'ls', '--output', 'json', '--output-keys', 'original_file_path']
+        cmd = ['dbt', 'ls', '--output', 'json']
         cmd = cmd + args
         try:
             if self.test_mode:

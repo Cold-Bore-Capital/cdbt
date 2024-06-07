@@ -1,5 +1,8 @@
 import re
+
+import pyperclip
 import wordninja
+
 import argparse
 import os
 from dotenv import load_dotenv
@@ -13,21 +16,28 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
         super().__init__()
         pass
 
-    def main(self, select, remove_airbyte, overwrite, files_override=None) -> None:
+    def main(self, select, split_names, remove_airbyte, overwrite, files_override=None) -> None:
         """
         Reads the SQL file, cleans up merged words, and sorts lines based on specified criteria.
         """
         if files_override:
-            files = files_override
+            if ',' in files_override:
+                files = files_override.split(',')
+            else:
+                files = [files_override]
         else:
             args = ['--select', select, '--exclude',
-                    'path:tests/* resource_type:test resource_type:seed resource_type:snapshot']
+                    'path:tests/* resource_type:test resource_type:seed resource_type:snapshot',
+                    '--output-keys', 'original_file_path']
             # Read the file content
             files = self.dbt_ls_to_json(args)
+            files = [x['original_file_path'] for x in files]
 
         for file_path in files:
             directory, filename = self._extract_path_and_filename(file_path)
             all_lines = self._read_sql_file_to_lines(os.path.join(directory, filename))
+
+            all_lines = self._remove_empty_lines(all_lines)
 
             if remove_airbyte:
                 # Remove Airbyte specific lines
@@ -42,11 +52,12 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
 
             lines_w_dtype = self._extract_datatypes(lines)
 
-            # Clean up merged words
-            cleaned_lines = self._clean_merged_words(lines_w_dtype)
+            if split_names:
+                # Clean up merged words
+                lines = self._clean_merged_words(lines_w_dtype)
 
             # Sort the lines according to the logic order
-            sorted_lines = self._sort_sql_lines(cleaned_lines)
+            sorted_lines = self._sort_sql_lines(lines)
 
             sorted_lines = self._alias_id_column(sorted_lines, filename.split('.')[0])
 
@@ -59,6 +70,19 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
             #     self._approve_output(all_lines)
             self._write_sql_file(all_lines, directory, filename, overwrite)
 
+    def sort_clipboard_lines(self):
+        lines = pyperclip.paste().split('\n')
+
+        lines = self._remove_trailing_comma(lines)
+
+        # Sort all lines alphabetically first.
+        lines = self._sort_lines_alphabetically(lines)
+
+        sorted_lines = self._sort_sql_lines(lines)
+
+        pyperclip.copy('\n'.join(sorted_lines))
+
+
     @staticmethod
     def _extract_path_and_filename(file_path):
         directory, filename = os.path.split(file_path)
@@ -68,6 +92,19 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
     def _read_sql_file_to_lines(file_path):
         with open(file_path, 'r') as file:
             all_lines = file.readlines()
+        return all_lines
+
+    @staticmethod
+    def _remove_empty_lines(all_lines: list) -> list:
+        """
+        Remove empty lines that are just \n
+        Args:
+            all_lines: A list containing all the selected lines.
+
+        Returns:
+            A list with the empty lines removed.
+        """
+        all_lines = [x for x in all_lines if x.strip() != '\n']
         return all_lines
 
     @staticmethod
@@ -244,12 +281,15 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
         lines_w_dtype = []
 
         for line in lines:
-            match = pattern.search(line)
-            if match:
-                data_type = match.group(1)
-                lines_w_dtype.append([line, data_type])
+            if line.strip().startswith('--'):
+                lines_w_dtype.append([line, 'comment'])
             else:
-                raise Exception(f'SQL Line {line} does not have a datatype.')
+                match = pattern.search(line)
+                if match:
+                    data_type = match.group(1)
+                    lines_w_dtype.append([line, data_type])
+                else:
+                    raise Exception(f'SQL Line {line} does not have a datatype.')
 
         return lines_w_dtype
 
@@ -266,9 +306,11 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
         Returns:
             List[str]: The separated words.
         """
+        # lm = wordninja.LanguageModel('wordninja_custom.txt.gz')
+        lm = wordninja
         responses = []
         for word in words:
-            split_words = wordninja.split(word)
+            split_words = lm.split(word)
             if len(split_words) > 1:
                 final_word = '_'.join(split_words)
             else:
@@ -323,18 +365,20 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
         # Define sorting criteria
         def sort_criteria(line: str) -> Tuple[int, str]:
             lower_line = line.lower()
-            if lower_line.endswith(' as id'):
+            if lower_line.startswith("ID"):
                 return 0, lower_line
-            elif lower_line.endswith('_id'):
+            elif lower_line.endswith(' as id'):
                 return 1, lower_line
-            elif lower_line.endswith('_at'):
+            elif lower_line.endswith('_id'):
                 return 2, lower_line
-            elif 'is_' in lower_line:
+            elif lower_line.endswith('_at'):
                 return 3, lower_line
-            elif '_airbyte' in lower_line:
-                return 5, lower_line
-            else:
+            elif 'is_' in lower_line:
                 return 4, lower_line
+            elif '_airbyte' in lower_line:
+                return 6, lower_line
+            else:
+                return 5, lower_line
 
         # Sort the lines based on the criteria
         sorted_lines = sorted(lines, key=sort_criteria)
@@ -420,7 +464,8 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
             lines (List[str]): The cleaned and sorted lines to write to the file.
         """
         subfolder = '_cleaned_files'
-        directory = os.path.join(directory, subfolder)
+        if not overwrite:
+            directory = os.path.join(directory, subfolder)
         if not os.path.exists(directory):
             os.makedirs(directory)
         with open(os.path.join(directory, filename), 'w') as file:
@@ -429,12 +474,21 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
 
 def cli_function():
     c = SQLModelCleaner()
-    c.main(select='Test',
+    # c.main(select='Test',
+    #        remove_airbyte=False,
+    #        overwrite=False,
+    #        files_override='tests/cbc_sql_standards_test_file.sql')
+
+    c.main(select='stg_wt_schedule_details',
            remove_airbyte=False,
            overwrite=False,
-           files_override='tests/cbc_sql_standards_test_file.sql')
+           files_override=None)
 
 
 if __name__ == '__main__':
+    '''
+    IMPORTANT. If you are debugging this in pycharm, you need to edit the run config, go to more options,
+    then turn on emulate terminal. 
+    '''
     cli_function()
 
