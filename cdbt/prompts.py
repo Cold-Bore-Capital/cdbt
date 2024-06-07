@@ -304,14 +304,14 @@ group by revenue_day_at
        , product_type_name
 ```
 
-You will return data that looks like this:
+You will return data that looks like this. Leave this line as is for the user to fill in `{% call dbt_unit_testing.test('model_name', 'Description of Test') %}` :
 
 ```
 {{ config(tags=['unit-test']) }}
 
 --depends-on: {{ ref('fct_appointments') }}
 
-{% call dbt_unit_testing.test('model_name', 'Unit Tests - Revenue Metrics') %}
+{% call dbt_unit_testing.test('model_name', 'Description of Test') %}
 
     {% call dbt_unit_testing.mock_ref('fct_order_items_mat', options={"input_format": "csv"}) %}
 
