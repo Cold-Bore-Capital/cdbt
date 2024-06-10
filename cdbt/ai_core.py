@@ -115,7 +115,7 @@ class AiCore:
             )
             select * 
             from tgt_table
-            sample (20 rows)
+            sample (75 rows)
             '''
         return sql
 
