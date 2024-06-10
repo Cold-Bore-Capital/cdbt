@@ -6,3 +6,5 @@ openai
 sqlfluff
 sqlfluff-templater-dbt
 wordninja
+build
+twine

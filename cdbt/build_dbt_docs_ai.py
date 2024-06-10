@@ -101,7 +101,7 @@ class BuildDBTDocs(AiCore):
         prompt_str = f'Build new DBT documentation for the following SQL query with model name {model_name}'
         if len(extra_info):
             prompt_str += f'\n{extra_info}'
-        prompt_str += f'\nSQL File Contents:\n{sql}'
+
         return prompt_str
 
     def build_user_msg_mode_2(self, _sql_file_path: str, _yml_file_path: str, extra_info: str) -> str:
@@ -112,7 +112,7 @@ class BuildDBTDocs(AiCore):
         if len(extra_info):
             prompt_str += f'\n {extra_info}'
         prompt_str += f'\nYML File Contents:\n{yml}'
-        prompt_str += f'\nSQL File Contents:\n{sql}'
+
         return prompt_str
 
 

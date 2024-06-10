@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='cdbt',
-    version='0.3.7',
+    version='0.3.9',
     description='A CLI tool to manage dbt builds with state handling and manifest management',
     author='Craig Lathrop',
     author_email='development@coldborecapital.com',
@@ -27,5 +27,5 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
     ],
-    python_requires='>=3.8'
+    python_requires='>=3.9'
 )

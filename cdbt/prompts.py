@@ -31,7 +31,7 @@ Primary DBT Guidelines:
     7. Only return the YML documentation file contents. Do not provide an explanation.
     8. Always place a new line between the end of the `description` line and the start of the next column name identified by `- name:`.
     9. Do not replace or modify existing descriptions, tests, or config blocks. Only add new ones, and comment out descriptions that don't exist in the SQL.
-    10. Reorder or order the column descriptions in the YML file in the same order they appear in the SQL query.
+    10. Reorder or order the column descriptions in the YML file in the same order they appear in the SQL query. If you are modifying an existing YML file, still re-order the elements, don't comment out the old element location and put a new element in.
     11. If modifying an existing YML, leave the value of materialized as is. Do not change it to `table` if it is `view` or vice versa.
     12. Lightdash portion details:
 
@@ -228,7 +228,7 @@ Primary DBT Guidelines:
     7. Only return the YML documentation file contents. Do not provide an explanation.
     8. Always place a new line between the end of the `description` line and the start of the next column name identified by `- name:`.
     9. Do not replace or modify existing descriptions, tests, or config blocks. Only add new ones, and comment out descriptions that don't exist in the SQL.
-    10. Reorder or order the column descriptions in the YML file in the same order they appear in the SQL query.
+    10. Reorder or order the column descriptions in the YML file in the same order they appear in the SQL query. If you are modifying an existing YML file, still re-order the elements, don't comment out the old element location and put a new element in.
     11. If modifying an existing YML, leave the value of materialized as is. Do not change it to `table` if it is `view` or vice versa.
     12. Lightdash portion details:
 
