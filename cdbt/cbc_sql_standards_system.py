@@ -1,13 +1,14 @@
+import os
 import re
+from typing import List
+from typing import Tuple
 
 import pyperclip
 import wordninja
-
-import argparse
-import os
 from dotenv import load_dotenv
-from typing import List, Tuple, Union
+
 from cdbt.main import ColdBoreCapitalDBT
+
 load_dotenv()
 
 
@@ -16,22 +17,29 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
         super().__init__()
         pass
 
-    def main(self, select, split_names, remove_airbyte, overwrite, files_override=None) -> None:
+    def main(
+        self, select, split_names, remove_airbyte, overwrite, files_override=None
+    ) -> None:
         """
         Reads the SQL file, cleans up merged words, and sorts lines based on specified criteria.
         """
         if files_override:
-            if ',' in files_override:
-                files = files_override.split(',')
+            if "," in files_override:
+                files = files_override.split(",")
             else:
                 files = [files_override]
         else:
-            args = ['--select', select, '--exclude',
-                    'path:tests/* resource_type:test resource_type:seed resource_type:snapshot',
-                    '--output-keys', 'original_file_path']
+            args = [
+                "--select",
+                select,
+                "--exclude",
+                "path:tests/* resource_type:test resource_type:seed resource_type:snapshot",
+                "--output-keys",
+                "original_file_path",
+            ]
             # Read the file content
             files = self.dbt_ls_to_json(args)
-            files = [x['original_file_path'] for x in files]
+            files = [x["original_file_path"] for x in files]
 
         for file_path in files:
             directory, filename = self._extract_path_and_filename(file_path)
@@ -59,11 +67,13 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
             # Sort the lines according to the logic order
             sorted_lines = self._sort_sql_lines(lines)
 
-            sorted_lines = self._alias_id_column(sorted_lines, filename.split('.')[0])
+            sorted_lines = self._alias_id_column(sorted_lines, filename.split(".")[0])
 
             sorted_lines = self._add_trailing_comma(sorted_lines)
 
-            all_lines = self._insert_sorted_lines(all_lines, sorted_lines, lines_start, lines_end)
+            all_lines = self._insert_sorted_lines(
+                all_lines, sorted_lines, lines_start, lines_end
+            )
 
             # if self._args.approve:
             #     # Print the cleaned and sorted lines to the console and prompt the user to approve the changes
@@ -71,7 +81,7 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
             self._write_sql_file(all_lines, directory, filename, overwrite)
 
     def sort_clipboard_lines(self):
-        lines = pyperclip.paste().split('\n')
+        lines = pyperclip.paste().split("\n")
 
         lines = self._remove_trailing_comma(lines)
 
@@ -80,8 +90,7 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
 
         sorted_lines = self._sort_sql_lines(lines)
 
-        pyperclip.copy('\n'.join(sorted_lines))
-
+        pyperclip.copy("\n".join(sorted_lines))
 
     @staticmethod
     def _extract_path_and_filename(file_path):
@@ -90,7 +99,7 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
 
     @staticmethod
     def _read_sql_file_to_lines(file_path):
-        with open(file_path, 'r') as file:
+        with open(file_path, "r") as file:
             all_lines = file.readlines()
         return all_lines
 
@@ -104,7 +113,7 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
         Returns:
             A list with the empty lines removed.
         """
-        all_lines = [x for x in all_lines if x.strip() != '\n']
+        all_lines = [x for x in all_lines if x.strip() != "\n"]
         return all_lines
 
     @staticmethod
@@ -121,12 +130,12 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
         end_index = 0
         for ix, line in enumerate(all_lines):
             # Check for the start of the section we're interested in
-            if 'final as (' in line.lower():
+            if "final as (" in line.lower():
                 start_index = ix + 3  # account for the /n and 'select' in the line
                 begin_capture = True
                 continue  # Skip the line with 'final as ('
             # Check for the end of the section we're interested in
-            elif 'from raw_source' in line.lower():
+            elif "from raw_source" in line.lower():
                 end_index = ix - 1  # account for a /n at the bottom.
                 break  # Stop capturing when 'from raw_source' is found
             # Capture lines if we are within the section
@@ -150,9 +159,9 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
         """
         cleaned_lines = []
         for line in lines:
-            if line.endswith(',\n'):
+            if line.endswith(",\n"):
                 line = line[:-2]
-            elif line.endswith('\n'):
+            elif line.endswith("\n"):
                 line = line[:-1]
             cleaned_lines.append(line)
         return cleaned_lines
@@ -167,7 +176,7 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
         Returns:
             List[str]: The cleaned lines with separated alias words.
         """
-        pattern = re.compile(r'\b(as\s+)(?P<alias>\w+)(,?)\b', re.IGNORECASE)
+        pattern = re.compile(r"\b(as\s+)(?P<alias>\w+)(,?)\b", re.IGNORECASE)
 
         # Extract aliases that are merged words
         merged_words = []
@@ -175,16 +184,22 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
 
             match = pattern.search(line[0])
             if match:
-                alias = match.group('alias')
+                alias = match.group("alias")
                 alias = self._ensure_is_flag_split(alias)
-                merged_words.append((alias, match.start('alias'), match.end('alias'), line[0], line[1]))
+                merged_words.append(
+                    (alias, match.start("alias"), match.end("alias"), line[0], line[1])
+                )
 
         # Call OpenAI API to separate words
         separated_words = self._split_words([mw[0] for mw in merged_words])
         output = []
         # Replace merged words with separated words in the lines
-        for (alias, start, end, orig_line, data_type), separated in zip(merged_words, separated_words):
-            separated_with_underscores = separated.replace(" ", "_")  # Replace spaces with underscores
+        for (alias, start, end, orig_line, data_type), separated in zip(
+            merged_words, separated_words
+        ):
+            separated_with_underscores = separated.replace(
+                " ", "_"
+            )  # Replace spaces with underscores
             new_line = orig_line[:start] + separated_with_underscores + orig_line[end:]
             # make sure date or datetime lines end in at
             new_line = self._check_that_datetime_contains_at(new_line, data_type)
@@ -204,8 +219,8 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
         Returns:
             str: The line with is_ prefixed if necessary.
         """
-        if alias.startswith('is'):
-            alias = 'is_' + alias[2:]
+        if alias.startswith("is"):
+            alias = "is_" + alias[2:]
             return alias
         else:
             return alias
@@ -222,12 +237,19 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
         Returns:
             str: The line with _at appended if necessary.
         """
-        list_of_date_type = ['date', 'datetime', 'timestamp', 'timestamp_tz', 'time', 'timestamp_ltz', 'timestamp_ntz']
+        list_of_date_type = [
+            "date",
+            "datetime",
+            "timestamp",
+            "timestamp_tz",
+            "time",
+            "timestamp_ltz",
+            "timestamp_ntz",
+        ]
         if data_type in list_of_date_type:
-            if not line.endswith('_at'):
-                return line + '_at'
+            if not line.endswith("_at"):
+                return line + "_at"
         return line
-
 
     def _check_that_bool_starts_with_is(self, line: str, data_type: str) -> str:
         """
@@ -240,7 +262,7 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
         Returns:
             str: The line with is_ prepended if necessary.
         """
-        pattern = r'\bas\s+(\w+)'
+        pattern = r"\bas\s+(\w+)"
 
         # Search for the alias in the string
         match = re.search(pattern, line)
@@ -258,7 +280,6 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
 
         return transformed_string
 
-
     @staticmethod
     def _is_transform_function(alias: str, data_type: str) -> str:
         """
@@ -269,31 +290,29 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
         Returns:
 
         """
-        list_of_date_type = ['boolean', 'bool']
+        list_of_date_type = ["boolean", "bool"]
         if data_type in list_of_date_type:
-            if not alias.startswith('is_'):
-                return 'is_' + alias
+            if not alias.startswith("is_"):
+                return "is_" + alias
         return alias
 
     @staticmethod
     def _extract_datatypes(lines: List[str]) -> List[List[str]]:
-        pattern = re.compile(r'::(\w+)')
+        pattern = re.compile(r"::(\w+)")
         lines_w_dtype = []
 
         for line in lines:
-            if line.strip().startswith('--'):
-                lines_w_dtype.append([line, 'comment'])
+            if line.strip().startswith("--"):
+                lines_w_dtype.append([line, "comment"])
             else:
                 match = pattern.search(line)
                 if match:
                     data_type = match.group(1)
                     lines_w_dtype.append([line, data_type])
                 else:
-                    raise Exception(f'SQL Line {line} does not have a datatype.')
+                    raise Exception(f"SQL Line {line} does not have a datatype.")
 
         return lines_w_dtype
-
-
 
     @staticmethod
     def _split_words(words: List[str]) -> List[str]:
@@ -312,7 +331,7 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
         for word in words:
             split_words = lm.split(word)
             if len(split_words) > 1:
-                final_word = '_'.join(split_words)
+                final_word = "_".join(split_words)
             else:
                 final_word = word
             responses.append(final_word)
@@ -332,9 +351,13 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
         patterns_to_remove = [
             re.escape('"_AIRBYTE_RAW_ID"::varchar as airbyte_raw_id,'),
             re.escape('"_AIRBYTE_EXTRACTED_AT"::timestamp_tz as airbyte_extracted_at,'),
-            re.escape('"_AIRBYTE_META"::variant as airbyte_meta,')
+            re.escape('"_AIRBYTE_META"::variant as airbyte_meta,'),
         ]
-        cleaned_lines = [line for line in lines if not any(re.search(pattern, line) for pattern in patterns_to_remove)]
+        cleaned_lines = [
+            line
+            for line in lines
+            if not any(re.search(pattern, line) for pattern in patterns_to_remove)
+        ]
         return cleaned_lines
 
     @staticmethod
@@ -367,15 +390,15 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
             lower_line = line.lower()
             if lower_line.startswith("ID"):
                 return 0, lower_line
-            elif lower_line.endswith(' as id'):
+            elif lower_line.endswith(" as id"):
                 return 1, lower_line
-            elif lower_line.endswith('_id'):
+            elif lower_line.endswith("_id"):
                 return 2, lower_line
-            elif lower_line.endswith('_at'):
+            elif lower_line.endswith("_at"):
                 return 3, lower_line
-            elif 'is_' in lower_line:
+            elif "is_" in lower_line:
                 return 4, lower_line
-            elif '_airbyte' in lower_line:
+            elif "_airbyte" in lower_line:
                 return 6, lower_line
             else:
                 return 5, lower_line
@@ -397,11 +420,11 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
             List[str]: The cleaned lines with trailing commas removed.
         """
         id_line = lines[0]
-        parts = id_line.split(' as ')
+        parts = id_line.split(" as ")
         if len(parts) == 2:
-            new_id_line = f'{parts[0]} as {model_name}_{parts[1]}'
+            new_id_line = f"{parts[0]} as {model_name}_{parts[1]}"
         else:
-            raise Exception(f'ID line {id_line} does not have an alias.')
+            raise Exception(f"ID line {id_line} does not have an alias.")
         lines[0] = new_id_line
         return lines
 
@@ -419,14 +442,16 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
         cleaned_lines = []
         for ix, line in enumerate(lines):
             if ix < len(lines) - 1:
-                line = line + ',\n'
+                line = line + ",\n"
             else:
-                line = line + '\n'
+                line = line + "\n"
             cleaned_lines.append(line)
         return cleaned_lines
 
     @staticmethod
-    def _insert_sorted_lines(full_lines: List[str], sorted_lines: List[str], start_ix: int, end_ix: int) -> List[str]:
+    def _insert_sorted_lines(
+        full_lines: List[str], sorted_lines: List[str], start_ix: int, end_ix: int
+    ) -> List[str]:
         """
         Inserts the sorted lines back into the full list of lines.
 
@@ -450,25 +475,27 @@ class SQLModelCleaner(ColdBoreCapitalDBT):
         Args:
             full_lines (List[str]): The cleaned and sorted lines to print to the console.
         """
-        print(''.join(full_lines))
-        approved = input('Approve changes? (y/n): ')
-        if approved.lower() != 'y':
-            raise Exception('Changes not approved.')
+        print("".join(full_lines))
+        approved = input("Approve changes? (y/n): ")
+        if approved.lower() != "y":
+            raise Exception("Changes not approved.")
 
     @staticmethod
-    def _write_sql_file(lines: List[str], directory: str, filename: str, overwrite: str) -> None:
+    def _write_sql_file(
+        lines: List[str], directory: str, filename: str, overwrite: str
+    ) -> None:
         """
         Writes the cleaned and sorted lines back to the SQL file.
 
         Args:
             lines (List[str]): The cleaned and sorted lines to write to the file.
         """
-        subfolder = '_cleaned_files'
+        subfolder = "_cleaned_files"
         if not overwrite:
             directory = os.path.join(directory, subfolder)
         if not os.path.exists(directory):
             os.makedirs(directory)
-        with open(os.path.join(directory, filename), 'w') as file:
+        with open(os.path.join(directory, filename), "w") as file:
             file.writelines(lines)
 
 
@@ -479,16 +506,17 @@ def cli_function():
     #        overwrite=False,
     #        files_override='tests/cbc_sql_standards_test_file.sql')
 
-    c.main(select='stg_wt_schedule_details',
-           remove_airbyte=False,
-           overwrite=False,
-           files_override=None)
+    c.main(
+        select="stg_wt_schedule_details",
+        remove_airbyte=False,
+        overwrite=False,
+        files_override=None,
+    )
 
 
-if __name__ == '__main__':
-    '''
+if __name__ == "__main__":
+    """
     IMPORTANT. If you are debugging this in pycharm, you need to edit the run config, go to more options,
-    then turn on emulate terminal. 
-    '''
+    then turn on emulate terminal.
+    """
     cli_function()
-

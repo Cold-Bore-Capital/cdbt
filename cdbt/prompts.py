@@ -1,11 +1,9 @@
-
-
 class Prompts:
-    '''
-Holding: @ todo: something with this like a local config.
-    1. These models are all veterinary related.
-    2. VS is shorthand for Vetspire. Vetspire is a veterinary software practice management company.
-'''
+    """
+    Holding: @ todo: something with this like a local config.
+        1. These models are all veterinary related.
+        2. VS is shorthand for Vetspire. Vetspire is a veterinary software practice management company.
+    """
 
     @property
     def dbt_docs_gte_l3_prompt(self):
@@ -88,7 +86,7 @@ Primary DBT Guidelines:
         compact: thousands
         group_label: "Revenue"
         ```
-          if the sample data is typically in the hundreds, do not add `compact: thousands`. to the output. 
+          if the sample data is typically in the hundreds, do not add `compact: thousands`. to the output.
 
         b. If the measure is a type of count, and the sample data shows values in the thousands or millions, add:
         ```
@@ -97,7 +95,7 @@ Primary DBT Guidelines:
         group_label: "Counts"
         ```
             if the sample data is typically in the hundreds, do not add `compact: thousands`. to the output.
-        
+
         c. If the measure is some other type of numeric value that is not an ID, take a best guess on the group field. Try to group similar measures together.
         ```
         round: 2
@@ -121,8 +119,8 @@ Primary DBT Guidelines:
                 compact: thousands
                 group_label: "Revenue"
         ```
-        
-        
+
+
 
 Full example output:
 ```
@@ -198,10 +196,8 @@ models:
 
 ```
 
-This is a CSV data sample from the model:        
+This is a CSV data sample from the model:
         """
-
-
 
     @property
     def dbt_docs_lte_l2_prompt(self):
@@ -275,15 +271,15 @@ models:
       - name: medical_appointment_count
         description: "Count of medical appointments."
 ```
-This is a CSV data sample from the model:    
+This is a CSV data sample from the model:
         """
 
     @property
     def build_unit_test_prompt(self):
 
         return """
-You will help build mockup input and expected output data for DBT unit tests using the EqualExperts/dbt_unit_testing package. The input and expect data will be in a CSV type format using | as a seperator between fields. 
-        
+You will help build mockup input and expected output data for DBT unit tests using the EqualExperts/dbt_unit_testing package. The input and expect data will be in a CSV type format using | as a seperator between fields.
+
 The user will pass a SQL DBT model that looks like this as input:
 ```
 select
@@ -342,7 +338,7 @@ You will return data that looks like this. Leave this line as is for the user to
 {% endcall %}
 ```
 
-Note how the model aggregates the expected REVENUE_SUM. Do your best to aggregate the expected data based on the SQL in the input. 
+Note how the model aggregates the expected REVENUE_SUM. Do your best to aggregate the expected data based on the SQL in the input.
 
 When creating the mock data, follow these guidelines:
 
@@ -354,7 +350,7 @@ When creating the mock data, follow these guidelines:
 6. You will need an `mock_ref` block for each DBT model in the input SQL. DBT models will be defined as either {{ ref('model_name') }} or {{ dbt_unit_testing.ref('model_name') }}.
 7. Align the columns in the input and expected using tabs. You can use as many rows as needed.
 8. Output the data in the same format as the example. Use as many `dbt_unit_testing.mock_ref` blocks as needed.
-9. Use enough rows with variation that at least one aggregation can be created. For example, if the model groups by date and ID, you will need at least two rows with the same date and ID but different values for the columns being aggregated. 
+9. Use enough rows with variation that at least one aggregation can be created. For example, if the model groups by date and ID, you will need at least two rows with the same date and ID but different values for the columns being aggregated.
 10. Location names are always three uppercase letters followed by three numbers. For example, "ABC123" or "DEF123". Network names are always the first three uppercase letters of the network name, like "ABC" or "DEF"
 11. At the top of the file as in the example, add a --depends-on line for each moc_ref model used in the input SQL. Example, --depends-on: {{ ref('fct_appointments') }}
 12. Encapsulate any string in single or date in single quotes. Even if the sample data has long strings, truncate to no more than 30 characters, preferably even less unless the logic requires something more.
@@ -363,4 +359,6 @@ When creating the mock data, follow these guidelines:
 15. Do not include columns in the mock_ref blocks that are not used by the SQL model being tested.
 Do not provide an explanation, only return the code for the test.
         """
-#%%
+
+
+# %%
