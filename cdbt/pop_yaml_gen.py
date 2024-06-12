@@ -251,8 +251,8 @@ class BuildCBCUtilsYAML:
                           hidden: true
                       metrics:
                           {column_alias}_sum:
-                              label: "{column_name_title_case} - PoP {days} {grain_str}"
-                              group_label: "Period Over Period - {days} {grain_str}"
+                              label: "{column_name_title_case} - {days} {grain_str} MA"
+                              group_label: "Moving Average"
                               type: sum
                               description: "{days} {grain_str.lower()} moving average for {column_name_title_case}."
                               round: 0
