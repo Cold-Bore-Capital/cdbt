@@ -5,6 +5,7 @@ from cdbt.cbc_sql_standards_system import SQLModelCleaner
 from cdbt.main import ColdBoreCapitalDBT
 from cdbt.build_dbt_docs_ai import BuildDBTDocs
 from cdbt.build_unit_test_data_ai import BuildUnitTestDataAI
+from cdbt.pop_yaml_gen import BuildCBCUtilsYAML
 
 cdbt_class = ColdBoreCapitalDBT()
 
@@ -34,7 +35,8 @@ class CustomCmdLoader(click.Group):
     def list_commands(self, ctx):
         # List of all commands
         return ['help', 'build', 'trun', 'run', 'test', 'compile', 'clip-compile', 'unittest', 'sbuild', 'pbuild',
-                'gbuild', 'build-docs', 'build-unit', 'lightdash', 'clean-stg', 'clean-clip', 'pre-commit']
+                'gbuild', 'build-docs', 'build-unit', 'lightdash', 'clean-stg', 'clean-clip', 'pre-commit', 'pop-yaml',
+                'ma-yaml']
 
 
 cdbt = CustomCmdLoader()
@@ -199,6 +201,20 @@ def clean_clip():
     sql_model_cleaner = SQLModelCleaner()
     sql_model_cleaner.sort_clipboard_lines()
 
+@cdbt.command()
+@click.option('--select', '-s', type=str, help="Names of the model to build PoP YAML string for.")
+@click.option('--include-avg', is_flag=True, help="Include metric blocks for averages.")
+def pop_yaml(select, include_avg):
+    '''Build the YAML PoP macro columns for a given model targeted in the select statement.'''
+    yml = BuildCBCUtilsYAML()
+    yml.build_pop_yaml(select, include_avg)
+
+@cdbt.command()
+@click.option('--select', '-s', type=str, help="Names of the model to build MA YAML string for.")
+def ma_yaml(select):
+    '''Build the YAML Moving Avearage macro columns for a given model targeted in the select statement.'''
+    yml = BuildCBCUtilsYAML()
+    yml.build_ma_yaml(select)
 
 @cdbt.command()
 @click.pass_context

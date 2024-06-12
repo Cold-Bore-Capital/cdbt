@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='cdbt',
-    version='0.3.10',
+    version='0.3.11',
     description='A CLI tool to manage dbt builds with state handling and manifest management',
     author='Craig Lathrop',
     author_email='development@coldborecapital.com',
