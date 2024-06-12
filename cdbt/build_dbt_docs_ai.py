@@ -4,6 +4,7 @@ import subprocess
 import pyperclip
 
 load_dotenv(find_dotenv('../.env'))
+load_dotenv(find_dotenv('.env'))
 # Have to load env before import openai package.
 import openai
 

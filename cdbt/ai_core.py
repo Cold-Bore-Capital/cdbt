@@ -6,6 +6,7 @@ import os
 import re
 import snowflake.connector as snow
 load_dotenv(find_dotenv('../.env'))
+load_dotenv(find_dotenv('.env'))
 # Have to load env before import openai package.
 import openai
 from cdbt.main import ColdBoreCapitalDBT

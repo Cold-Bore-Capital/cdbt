@@ -3,10 +3,9 @@ from typing import List, Dict
 from dotenv import load_dotenv, find_dotenv
 import os
 import pyperclip
-import snowflake.connector as snow
 import warnings
 load_dotenv(find_dotenv('../.env'))
-import openai
+load_dotenv(find_dotenv('.env'))
 import logging
 
 from cdbt.prompts import Prompts
