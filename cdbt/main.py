@@ -1,12 +1,14 @@
 import json
-import subprocess
-import re
-import sys
-import pyperclip
-import shutil
 import os
+import re
+import shutil
+import subprocess
+import sys
 import typing as t
-from click.core import Context, Command
+
+import pyperclip
+from click.core import Command
+from click.core import Context
 
 
 class ColdBoreCapitalDBT:
@@ -15,15 +17,20 @@ class ColdBoreCapitalDBT:
         self.test_mode = test_mode
         self.dbt_ls_test_mode_output = None
         self.dbt_test_mode_command_check_value = None
-        self.exclude_seed_snapshot = 'resource_type:snapshot resource_type:seed'
+        self.exclude_seed_snapshot = "resource_type:snapshot resource_type:seed"
 
-        self.dbt_execute_command_output = ''
+        self.dbt_execute_command_output = ""
 
     def build(self, ctx: Context, full_refresh, select, fail_fast, threads):
-        flags = {'select': select, 'fail_fast': fail_fast, 'threads': threads, 'full_refresh': full_refresh}
+        flags = {
+            "select": select,
+            "fail_fast": fail_fast,
+            "threads": threads,
+            "full_refresh": full_refresh,
+        }
         args = self._create_common_args(flags)
         try:
-            run_result = self.execute_dbt_command_stream('build', args)
+            run_result = self.execute_dbt_command_stream("build", args)
         except subprocess.CalledProcessError as e:
             print(f'Failure while running command: {" ".join(e.cmd)}')
             print(e.stderr)
@@ -31,14 +38,19 @@ class ColdBoreCapitalDBT:
             sys.exit(e.returncode)
 
         if not run_result:
-            raise DbtError('DBT build failed with errors.')
+            raise DbtError("DBT build failed with errors.")
 
     def trun(self, ctx: Context, full_refresh, select, fail_fast, threads):
-        flags = {'select': select, 'fail_fast': fail_fast, 'threads': threads, 'full_refresh': full_refresh}
+        flags = {
+            "select": select,
+            "fail_fast": fail_fast,
+            "threads": threads,
+            "full_refresh": full_refresh,
+        }
         args = self._create_common_args(flags)
-        args = args + ['--exclude', self.exclude_seed_snapshot]
+        args = args + ["--exclude", self.exclude_seed_snapshot]
         try:
-            run_result = self.execute_dbt_command_stream('build', args)
+            run_result = self.execute_dbt_command_stream("build", args)
         except subprocess.CalledProcessError as e:
             print(f'Failure while running command: {" ".join(e.cmd)}')
             print(e.stderr)
@@ -46,13 +58,18 @@ class ColdBoreCapitalDBT:
             sys.exit(e.returncode)
 
         if not run_result:
-            raise DbtError('DBT build failed with errors.')
+            raise DbtError("DBT build failed with errors.")
 
     def run(self, ctx: Context, full_refresh, select, fail_fast, threads):
-        flags = {'select': select, 'fail_fast': fail_fast, 'threads': threads, 'full_refresh': full_refresh}
+        flags = {
+            "select": select,
+            "fail_fast": fail_fast,
+            "threads": threads,
+            "full_refresh": full_refresh,
+        }
         args = self._create_common_args(flags)
         try:
-            run_result = self.execute_dbt_command_stream('run', args)
+            run_result = self.execute_dbt_command_stream("run", args)
         except subprocess.CalledProcessError as e:
             print(f'Failure while running command: {" ".join(e.cmd)}')
             print(e.stderr)
@@ -60,13 +77,13 @@ class ColdBoreCapitalDBT:
             sys.exit(e.returncode)
 
         if not run_result:
-            raise DbtError('DBT build failed with errors.')
+            raise DbtError("DBT build failed with errors.")
 
     def test(self, ctx: Context, select, fail_fast, threads):
-        flags = {'select': select, 'fail_fast': fail_fast, 'threads': threads}
+        flags = {"select": select, "fail_fast": fail_fast, "threads": threads}
         args = self._create_common_args(flags)
         try:
-            run_result = self.execute_dbt_command_stream('test', args)
+            run_result = self.execute_dbt_command_stream("test", args)
         except subprocess.CalledProcessError as e:
             print(f'Failure while running command: {" ".join(e.cmd)}')
             print(e.stderr)
@@ -74,14 +91,14 @@ class ColdBoreCapitalDBT:
             sys.exit(e.returncode)
 
         if not run_result:
-            raise DbtError('DBT build failed with errors.')
+            raise DbtError("DBT build failed with errors.")
 
     def unittest(self, ctx: Context, select, fail_fast):
-        select = f'{select},tag:unit-test'  # Comma is an and condition.
-        flags = {'select': select, 'fail_fast': fail_fast}
+        select = f"{select},tag:unit-test"  # Comma is an and condition.
+        flags = {"select": select, "fail_fast": fail_fast}
         args = self._create_common_args(flags)
         try:
-            run_result = self.execute_dbt_command_stream('test', args)
+            run_result = self.execute_dbt_command_stream("test", args)
         except subprocess.CalledProcessError as e:
             print(f'Failure while running command: {" ".join(e.cmd)}')
             print(e.stderr)
@@ -89,12 +106,12 @@ class ColdBoreCapitalDBT:
             sys.exit(e.returncode)
 
         if not run_result:
-            raise DbtError('DBT build failed with errors.')
+            raise DbtError("DBT build failed with errors.")
 
     def compile(self, ctx: Context, select):
         # We ignore the ctx object as compile has no threads.
         try:
-            self.execute_dbt_command_stream('compile', [])
+            self.execute_dbt_command_stream("compile", [])
         except subprocess.CalledProcessError as e:
             print(f'Failure while running command: {" ".join(e.cmd)}')
             print(e.stderr)
@@ -104,7 +121,7 @@ class ColdBoreCapitalDBT:
     def clip_compile(self, ctx: Context, select):
         # We ignore the ctx object as compile has no threads.
         try:
-            self.execute_dbt_command_stream('compile', ['-s', select])
+            self.execute_dbt_command_stream("compile", ["-s", select])
             results = self.dbt_execute_command_output
             # Copy to clipboard
             results = self.extract_sql_code(results)
@@ -116,36 +133,52 @@ class ColdBoreCapitalDBT:
             sys.exit(e.returncode)
 
     def sbuild(self, ctx: Context, full_refresh, threads):
-        print('Starting a state build based on local manifest.json')
-        artifact_dir = '_artifacts'
-        target_dir = 'target'
+        print("Starting a state build based on local manifest.json")
+        artifact_dir = "_artifacts"
+        target_dir = "target"
         # Path to the artifacts file that will be generated by the dbt compile command representing the current state.
-        manifest_path = os.path.join('/', target_dir, 'manifest.json')
+        manifest_path = os.path.join("/", target_dir, "manifest.json")
         # Path to the artifact file that represents the prior build state.
-        manifest_artifact_path = os.path.join('/', artifact_dir, 'manifest.json')
+        manifest_artifact_path = os.path.join("/", artifact_dir, "manifest.json")
 
-        self.execute_state_based_build(ctx, artifact_dir, manifest_artifact_path, manifest_path, full_refresh, threads,
-                                       roll_back_manifest_flag=True)
+        self.execute_state_based_build(
+            ctx,
+            artifact_dir,
+            manifest_artifact_path,
+            manifest_path,
+            full_refresh,
+            threads,
+            roll_back_manifest_flag=True,
+        )
 
     def pbuild(self, ctx: Context, full_refresh, threads, skip_download):
-        print('Starting a state build based on production manifest.json')
-        artifact_dir = 'logs'
-        target_dir = 'target'
+        print("Starting a state build based on production manifest.json")
+        artifact_dir = "logs"
+        target_dir = "target"
         # Pull artifacts from Snowflake. These are the latest production artifacts.
         try:
             if not self.test_mode and not skip_download:
-                subprocess.run(['dbt', 'run-operation', 'get_last_artifacts'], check=True)
+                subprocess.run(
+                    ["dbt", "run-operation", "get_last_artifacts"], check=True
+                )
         except subprocess.CalledProcessError as e:
             print(f'Failure while running command: {" ".join(e.cmd)}')
             print(e.stderr)
             print(e.stdout)
             sys.exit(e.returncode)
 
-        manifest_path = os.path.join('', target_dir, 'manifest.json')
-        manifest_artifact_path = os.path.join('', artifact_dir, 'manifest.json')
+        manifest_path = os.path.join("", target_dir, "manifest.json")
+        manifest_artifact_path = os.path.join("", artifact_dir, "manifest.json")
 
-        self.execute_state_based_build(ctx, artifact_dir, manifest_artifact_path, manifest_path, full_refresh, threads,
-                                       roll_back_manifest_flag=False)
+        self.execute_state_based_build(
+            ctx,
+            artifact_dir,
+            manifest_artifact_path,
+            manifest_path,
+            full_refresh,
+            threads,
+            roll_back_manifest_flag=False,
+        )
 
     def gbuild(self, ctx: Context, main, full_refresh, threads):
         """
@@ -160,60 +193,73 @@ class ColdBoreCapitalDBT:
 
         """
         if main:
-            print('Building based on changes from main branch.')
-            result = subprocess.run(['git', 'diff', 'main', '--name-only'], stdout=subprocess.PIPE, text=True)
+            print("Building based on changes from main branch.")
+            result = subprocess.run(
+                ["git", "diff", "main", "--name-only"],
+                stdout=subprocess.PIPE,
+                text=True,
+            )
         else:
-            result = subprocess.run(['git', 'diff', '--name-only'], stdout=subprocess.PIPE, text=True)
+            result = subprocess.run(
+                ["git", "diff", "--name-only"], stdout=subprocess.PIPE, text=True
+            )
 
         modified_files = result.stdout.splitlines()
 
-        sql_files = [file.split('/')[-1].replace('.sql', '') for file in modified_files if
-                     'models' in file and file.endswith('.sql')]
+        sql_files = [
+            file.split("/")[-1].replace(".sql", "")
+            for file in modified_files
+            if "models" in file and file.endswith(".sql")
+        ]
 
         # Construct state commands
-        build_children = ctx.obj.get('build_children', False)
-        build_children_count = ctx.obj.get('build_children_count', None)
-        build_parents = ctx.obj.get('build_parents', False)
-        build_parent_count = ctx.obj.get('build_parents_count', None)
+        build_children = ctx.obj.get("build_children", False)
+        build_children_count = ctx.obj.get("build_children_count", None)
+        build_parents = ctx.obj.get("build_parents", False)
+        build_parent_count = ctx.obj.get("build_parents_count", None)
         if build_children:
             if build_children_count:
                 for i in range(len(sql_files)):
-                    sql_files[i] = f'{sql_files[i]}+{build_children_count}'
+                    sql_files[i] = f"{sql_files[i]}+{build_children_count}"
             else:
                 for i in range(len(sql_files)):
-                    sql_files[i] = f'{sql_files[i]}+'
+                    sql_files[i] = f"{sql_files[i]}+"
 
         if build_parents:
             if build_parent_count:
                 for i in range(len(sql_files)):
-                    sql_files[i] = f'{build_parent_count}+{sql_files[i]}'
+                    sql_files[i] = f"{build_parent_count}+{sql_files[i]}"
             else:
                 for i in range(len(sql_files)):
-                    sql_files[i] = f'+{sql_files[i]}'
+                    sql_files[i] = f"+{sql_files[i]}"
 
-        select_list = ' '.join(sql_files)
+        select_list = " ".join(sql_files)
 
-        full_refresh = self._scan_for_incremental_full_refresh(state_flags=['--select', select_list],
-                                                               exclude_flags=None,
-                                                               full_refresh=full_refresh)
+        full_refresh = self._scan_for_incremental_full_refresh(
+            state_flags=["--select", select_list],
+            exclude_flags=None,
+            full_refresh=full_refresh,
+        )
 
         args = [
-            '--select', select_list,
-            '--exclude', 'resource_type:seed,resource_type:snapshot'
+            "--select",
+            select_list,
+            "--exclude",
+            "resource_type:seed,resource_type:snapshot",
         ]
         if threads:
-            args.append('--threads')
+            args.append("--threads")
             args.append(str(threads))
 
         if full_refresh:
-            args.append('--full-refresh')
+            args.append("--full-refresh")
 
-        self.execute_dbt_command_stream('build', args)
+        self.execute_dbt_command_stream("build", args)
 
     def lightdash(self, ctx, select, preview_name):
-        args = ['lightdash', 'start-preview', '--name', preview_name]
+        args = ["lightdash", "start-preview", "--name", preview_name]
         if select:
-            args = args + ['--select', select]
+            args = args + ["--select", select]
 
         try:
             subprocess.run(args, check=True)
@@ -224,7 +270,7 @@ class ColdBoreCapitalDBT:
             sys.exit(e.returncode)
 
     def pre_commit(self, ctx):
-        args = ['pre-commit', 'run', '--all-files']
+        args = ["pre-commit", "run", "--all-files"]
 
         try:
             subprocess.run(args, check=True)
@@ -241,16 +287,26 @@ class ColdBoreCapitalDBT:
         Args:
             ctx: Context object.
         """
-        print('Scanning for changed files since last commit.')
+        print("Scanning for changed files since last commit.")
         # Set the env path to the .sqlfluffignore
-        os.environ['SQLFLUFF_CONFIG'] = '../.sqlfluffignore'
+        os.environ["SQLFLUFF_CONFIG"] = "../.sqlfluffignore"
         try:
             if main:
                 # Check against main.
-                result = subprocess.run(['git', 'diff', '--name-only', 'main'], stdout=subprocess.PIPE, text=True, check=True)
+                result = subprocess.run(
+                    ["git", "diff", "--name-only", "main"],
+                    stdout=subprocess.PIPE,
+                    text=True,
+                    check=True,
+                )
             else:
                 # Check against last commit.
-                result = subprocess.run(['git', 'diff', '--name-only'], stdout=subprocess.PIPE, text=True, check=True)
+                result = subprocess.run(
+                    ["git", "diff", "--name-only"],
+                    stdout=subprocess.PIPE,
+                    text=True,
+                    check=True,
+                )
             changed_files = result.stdout.splitlines()
         except subprocess.CalledProcessError as e:
             print(f'Failure while running git command: {" ".join(e.cmd)}')
@@ -259,43 +315,55 @@ class ColdBoreCapitalDBT:
             sys.exit(e.returncode)
 
         # Filter SQL files
-        sql_files = [file for file in changed_files if file.endswith('.sql')]
+        sql_files = [file for file in changed_files if file.endswith(".sql")]
 
         # Filter out any files that are not in the models directory
-        sql_files = [file for file in sql_files if 'models' in file]
+        sql_files = [file for file in sql_files if "models" in file]
 
         if not sql_files and not all:
-            print('No SQL files have changed since the last commit.')
+            print("No SQL files have changed since the last commit.")
             return
 
         if all:
-            sql_files = ['./models']
+            sql_files = ["./models"]
 
         for sql_file in sql_files:
             try:
-                print(f'Running sqlfluff fix on {sql_file}')
-                subprocess.run(['sqlfluff', 'fix', sql_file, '--config', '../.sqlfluff'], check=True)
+                print(f"Running sqlfluff fix on {sql_file}")
+                subprocess.run(
+                    ["sqlfluff", "fix", sql_file, "--config", "../.sqlfluff"],
+                    check=True,
+                )
             except subprocess.CalledProcessError as e:
-                print(f'Failure while running sqlfluff fix command on {sql_file}')
+                print(f"Failure while running sqlfluff fix command on {sql_file}")
                 print(e.stderr)
                 print(e.stdout)
                 # Optionally, we might not want to exit immediately but continue fixing other files
                 # sys.exit(e.returncode)
 
-        print('Sqlfluff fix completed for all changed SQL files.')
+        print("Sqlfluff fix completed for all changed SQL files.")
 
-
-    def execute_state_based_build(self, ctx: Context, artifact_dir: str, manifest_artifact_path: str,
-                                  manifest_path: str, full_refresh: bool, threads: int, roll_back_manifest_flag: bool):
+    def execute_state_based_build(
+        self,
+        ctx: Context,
+        artifact_dir: str,
+        manifest_artifact_path: str,
+        manifest_path: str,
+        full_refresh: bool,
+        threads: int,
+        roll_back_manifest_flag: bool,
+    ):
         if roll_back_manifest_flag and not self.test_mode:
-            print(f'Making a backup of the current manifest.json at {manifest_path} to {manifest_artifact_path}')
+            print(
+                f"Making a backup of the current manifest.json at {manifest_path} to {manifest_artifact_path}"
+            )
             # Move the manifest from ./target to ./_artifacts. This becomes the prior state. Only used for local state
             # build. Not used for pdbuild (production build).
             shutil.move(manifest_path, manifest_artifact_path)
         # Execute dbt compile
         try:
             if not self.test_mode:
-                subprocess.run(['dbt', 'compile'], check=True)
+                subprocess.run(["dbt", "compile"], check=True)
         except subprocess.CalledProcessError as e:
             print(f'Failure while running command: {" ".join(e.cmd)}')
             print(e.stderr)
@@ -303,39 +371,43 @@ class ColdBoreCapitalDBT:
             sys.exit(e.returncode)
 
         # Construct state commands
-        build_children = ctx.obj.get('build_children', False)
-        build_children_count = ctx.obj.get('build_children_count', None)
-        build_parents = ctx.obj.get('build_parents', False)
-        build_parent_count = ctx.obj.get('build_parents_count', None)
-        state_modified_str = 'state:modified'
+        build_children = ctx.obj.get("build_children", False)
+        build_children_count = ctx.obj.get("build_children_count", None)
+        build_parents = ctx.obj.get("build_parents", False)
+        build_parent_count = ctx.obj.get("build_parents_count", None)
+        state_modified_str = "state:modified"
         if build_children:
-            state_modified_str = f'{state_modified_str}+'
+            state_modified_str = f"{state_modified_str}+"
             if build_children_count:
-                state_modified_str = f'{state_modified_str}{build_children_count}'
+                state_modified_str = f"{state_modified_str}{build_children_count}"
         if build_parents:
-            state_modified_str = f'+{state_modified_str}'
+            state_modified_str = f"+{state_modified_str}"
             if build_parent_count:
-                state_modified_str = f'{build_parent_count}{state_modified_str}'
+                state_modified_str = f"{build_parent_count}{state_modified_str}"
 
         state_flags = [
-            '--select', state_modified_str,
-            '--state', os.path.join('', artifact_dir) + '/'
+            "--select",
+            state_modified_str,
+            "--state",
+            os.path.join("", artifact_dir) + "/",
         ]
-        exclude_flags = ['--exclude', self.exclude_seed_snapshot]
+        exclude_flags = ["--exclude", self.exclude_seed_snapshot]
         # Get a list of models and their config
 
-        full_refresh = self._scan_for_incremental_full_refresh(state_flags, exclude_flags, full_refresh)
+        full_refresh = self._scan_for_incremental_full_refresh(
+            state_flags, exclude_flags, full_refresh
+        )
 
         run_result = None
         # Execute dbt build excluding snapshots and seeds
         # Rest the args.
-        args = self._create_common_args({'threads': threads})
+        args = self._create_common_args({"threads": threads})
         args = args + state_flags + exclude_flags
         if full_refresh:
-            args = args + ['--full-refresh']
+            args = args + ["--full-refresh"]
 
         try:
-            run_result = self.execute_dbt_command_stream('build', args)
+            run_result = self.execute_dbt_command_stream("build", args)
         except subprocess.CalledProcessError as e:
             print(f'Failure while running command: {" ".join(e.cmd)}')
             print(e.stderr)
@@ -346,11 +418,13 @@ class ColdBoreCapitalDBT:
                 sys.exit(e.returncode)
 
         if not run_result:
-            e = 'DBT build failed with errors.'
+            e = "DBT build failed with errors."
             self.roll_back_manifest(e, manifest_artifact_path, manifest_path)
-            raise DbtError('DBT build failed with errors.')
+            raise DbtError("DBT build failed with errors.")
 
-    def _scan_for_incremental_full_refresh(self, state_flags, exclude_flags, full_refresh):
+    def _scan_for_incremental_full_refresh(
+        self, state_flags, exclude_flags, full_refresh
+    ):
         if state_flags and exclude_flags:
             args = state_flags + exclude_flags
         elif state_flags and not exclude_flags:
@@ -360,54 +434,58 @@ class ColdBoreCapitalDBT:
         else:
             args = []
 
-        args = args + ['--output-keys', 'name resource_type config']
+        args = args + ["--output-keys", "name resource_type config"]
         models_json = self.dbt_ls_to_json(args)
         if not full_refresh:
             for model in models_json:
-                if model['config']['materialized'] == 'incremental':
+                if model["config"]["materialized"] == "incremental":
                     full_refresh = True
-                    print(f'Found incremental build model: {model["name"]}. Initiating full refresh.')
+                    print(
+                        f'Found incremental build model: {model["name"]}. Initiating full refresh.'
+                    )
                     break
         return full_refresh
 
     def dbt_ls_to_json(self, args):
-        cmd = ['dbt', 'ls', '--output', 'json']
+        cmd = ["dbt", "ls", "--output", "json"]
         cmd = cmd + args
         try:
             if self.test_mode:
                 output = self.dbt_ls_test_mode_output
             else:
-                output = subprocess.run(cmd, check=True, text=True, capture_output=True).stdout
+                output = subprocess.run(
+                    cmd, check=True, text=True, capture_output=True
+                ).stdout
         except subprocess.CalledProcessError as e:
             print(e.stderr)
             print(e.stdout)
-            print(' '.join(cmd))
+            print(" ".join(cmd))
             sys.exit(e.returncode)
         # The results come back with a few header lines that need to be removed, then a series of JSON string with a
         # format like: {"name": "active_patient_metrics", "resource_type": "model", "config":
         # {"materialized": "incremental"}} RE removes the header stuff and finds the json lines.
-        json_lines = re.findall(r'^{.*$', output, re.MULTILINE)
+        json_lines = re.findall(r"^{.*$", output, re.MULTILINE)
         # Split lines and filter to get only JSON strings
         models_json = [json.loads(line) for line in json_lines]
         return models_json
 
     @staticmethod
     def _create_common_args(flags: t.Dict[str, t.Any]) -> t.List[str]:
-        threads = flags.get('threads', None)
-        select = flags.get('select', None)
-        fail_fast = flags.get('fail_fast', None)
-        full_refresh = flags.get('full_refresh', None)
+        threads = flags.get("threads", None)
+        select = flags.get("select", None)
+        fail_fast = flags.get("fail_fast", None)
+        full_refresh = flags.get("full_refresh", None)
         args = []
         if threads:
-            args.append('--threads')
+            args.append("--threads")
             args.append(str(threads))
         if select:
-            args.append('--select')
+            args.append("--select")
             args.append(select)
         if fail_fast:
-            args.append('--fail-fast')
+            args.append("--fail-fast")
         if full_refresh:
-            args.append('--full-refresh')
+            args.append("--full-refresh")
         return args
 
     @staticmethod
@@ -429,9 +507,11 @@ class ColdBoreCapitalDBT:
         Returns:
             A string containing the results of the command.
         """
-        cmd = ['dbt', command] + args
+        cmd = ["dbt", command] + args
         try:
-            output = subprocess.run(cmd, check=True, text=True, capture_output=True).stdout
+            output = subprocess.run(
+                cmd, check=True, text=True, capture_output=True
+            ).stdout
         except subprocess.CalledProcessError as e:
             print(f'Failure while running command: {" ".join(cmd)}')
             print(e.stderr)
@@ -450,7 +530,7 @@ class ColdBoreCapitalDBT:
             True if successful, False if error.
         """
 
-        dbt_command = ['dbt', command] + args
+        dbt_command = ["dbt", command] + args
         print(f'Running command: {" ".join(dbt_command)}')
         if self.test_mode:
             self.dbt_test_mode_command_check_value = dbt_command
@@ -469,16 +549,16 @@ class ColdBoreCapitalDBT:
             args,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True  # Ensure outputs are in text mode rather than bytes
+            text=True,  # Ensure outputs are in text mode rather than bytes
         )
         # Real-time output streaming
         while True:
             output = process.stdout.readline()
-            if output == '' and process.poll() is not None:
+            if output == "" and process.poll() is not None:
                 break
             if output:
                 print(output.rstrip())  # Print each line of the output
-                self.dbt_execute_command_output += output.rstrip() + '\n'
+                self.dbt_execute_command_output += output.rstrip() + "\n"
         # Capture and print any remaining output after the loop
         stdout, stderr = process.communicate()
         if stdout:
@@ -486,7 +566,9 @@ class ColdBoreCapitalDBT:
         # Check exit code
         if process.returncode != 0:
             print(f"Command resulted in an error: {stderr}")
-            raise subprocess.CalledProcessError(returncode=process.returncode, cmd=args, output=stderr)
+            raise subprocess.CalledProcessError(
+                returncode=process.returncode, cmd=args, output=stderr
+            )
         return stderr, stdout
 
     @staticmethod
@@ -506,7 +588,7 @@ class ColdBoreCapitalDBT:
         # Iterate over the lines and find the first empty line
         sql_start_index = 0
         for i, line in enumerate(lines):
-            if line.startswith('\x1b['):
+            if line.startswith("\x1b["):
                 sql_start_index = i + 1
 
         # Join the lines from the first empty line to the end
@@ -521,32 +603,31 @@ class ColdBoreCapitalDBT:
         return error_flag
 
 
-
-
 class DbtError(Exception):
     def __init__(self, message):
-        self.message = 'DBT build failed with errors.'
+        self.message = "DBT build failed with errors."
 
     def __str__(self):
         return self.message
 
 
 class MockCtx(Context):
-    def __init__(self,
-                 command: t.Optional["Command"] = None,
-                 ) -> None:
+    def __init__(
+        self,
+        command: t.Optional["Command"] = None,
+    ) -> None:
         self.obj = {
-            'build_children': False,
-            'build_children_count': None,
-            'parents_children': False,
-            'build_parent_count': None
+            "build_children": False,
+            "build_children_count": None,
+            "parents_children": False,
+            "build_parent_count": None,
         }
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cdbt = ColdBoreCapitalDBT()
-    mock_ctx = MockCtx(Command('Duck'))
-    mock_ctx.obj['build_children'] = True
+    mock_ctx = MockCtx(Command("Duck"))
+    mock_ctx.obj["build_children"] = True
     # cdbt.build(full_refresh=False, select=None, fail_fast=False)
     # cdbt.trun(full_refresh=False, select=None, fail_fast=False)
     # cdbt.run(full_refresh=False, select=None, fail_fast=False)
