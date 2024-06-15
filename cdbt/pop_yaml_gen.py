@@ -177,10 +177,10 @@ class BuildCBCUtilsYAML:
                     format_str = ""
                 if column_prefix:
                     column_alias = (
-                        f"{column_prefix}_{column_name}_{look_back_val}{grain}"
+                        f"{column_prefix}_{column_name}_{look_back_val}{grain}_pop"
                     )
                 else:
-                    column_alias = f"{column_name}_{look_back_val}{grain}"
+                    column_alias = f"{column_name}_{look_back_val}{grain}_pop"
                 column_name_title_case = column_name.replace("_", " ").title()
                 if include_avg:
                     # noqa: disable=All
@@ -241,7 +241,7 @@ class BuildCBCUtilsYAML:
                     format_str = 'format: "usd"'
                 else:
                     format_str = ""
-                column_alias = f"{column_name}_{days}{grain.upper()} MA"
+                column_alias = f"{column_name}_{days}{grain}_ma"
                 column_name_title_case = column_name.replace("_", " ").title()
 
                 output_tmp = f"""
