@@ -185,7 +185,7 @@ class BuildCBCUtilsYAML:
                 if include_avg:
                     # noqa: disable=All
                     avg_block = f"""
-                        {column_alias}_avg:
+                        {column_alias}_avg_pop:
                             label: "{column_name_title_case} - PoP {look_back_val} {grain_str} - Average"
                             description: "Average for prior period {column_name_title_case} looking back {look_back_val} {grain_str.lower()}"
                             group_label: "Period Over Period - {look_back_val} {grain_str}"
@@ -205,7 +205,7 @@ class BuildCBCUtilsYAML:
                           hidden: true
 
                       metrics:
-                          {column_alias}_sum:
+                          {column_alias}_sum_pop:
                               label: "{column_name_title_case} - PoP {look_back_val} {grain_str}"
                               group_label: "Period Over Period - {look_back_val} {grain_str}"
                               type: sum
