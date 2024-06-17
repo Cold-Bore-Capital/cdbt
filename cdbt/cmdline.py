@@ -53,7 +53,7 @@ class CustomCmdLoader(click.Group):
             "gbuild",
             "build-docs",
             "build-unit",
-            "lightdash",
+            "ld-preview",
             "clean-stg",
             "clean-clip",
             "pre-commit",
@@ -258,10 +258,10 @@ def build_unit(ctx, select):
     help="Name of the lightdash preview. Required.",
 )
 @click.pass_context
-def lightdash(ctx, select, name):
+def ld_preview(ctx, select, name):
     """Start a lightdash preview for a model."""
     preview_name = name
-    cdbt_class.lightdash(ctx, select, preview_name)
+    cdbt_class.lightdash_start_preview(ctx, select, preview_name)
 
 
 @cdbt.command()

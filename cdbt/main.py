@@ -6,10 +6,15 @@ import subprocess
 import sys
 import typing as t
 
+from dotenv import find_dotenv
+from dotenv import load_dotenv
+
 import pyperclip
 from click.core import Command
 from click.core import Context
 
+load_dotenv(find_dotenv("../.env"))
+load_dotenv(find_dotenv(".env"))
 
 class ColdBoreCapitalDBT:
 
@@ -256,7 +261,7 @@ class ColdBoreCapitalDBT:
 
         self.execute_dbt_command_stream("build", args)
 
-    def lightdash(self, ctx, select, preview_name):
+    def lightdash_start_preview(self, ctx, select, preview_name):
         args = ["lightdash", "start-preview", "--name", preview_name]
         if select:
             args = args + ["--select", select]
