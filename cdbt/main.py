@@ -6,15 +6,15 @@ import subprocess
 import sys
 import typing as t
 
-from dotenv import find_dotenv
-from dotenv import load_dotenv
-
 import pyperclip
 from click.core import Command
 from click.core import Context
+from dotenv import find_dotenv
+from dotenv import load_dotenv
 
 load_dotenv(find_dotenv("../.env"))
 load_dotenv(find_dotenv(".env"))
+
 
 class ColdBoreCapitalDBT:
 
