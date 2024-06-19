@@ -261,12 +261,24 @@ class ColdBoreCapitalDBT:
 
         self.execute_dbt_command_stream("build", args)
 
-    def lightdash_start_preview(self, ctx, select, preview_name):
+    def lightdash_start_preview(self, ctx, select, preview_name, l43):
+        if not preview_name:
+            # If no preview name, use the current name of the git branch
+            result = subprocess.run(
+                ["git", "branch", "--show-current"], stdout=subprocess.PIPE, text=True
+            )
+            preview_name = result.stdout.strip()
+
         args = ["lightdash", "start-preview", "--name", preview_name]
+
+        if l43:
+            args = args + ["-s", "tag:l3 tag:l4"]
+
         if select:
             args = args + ["--select", select]
 
         try:
+            print(f'Running command: {" ".join(args)}')
             subprocess.run(args, check=True)
         except subprocess.CalledProcessError as e:
             print(f'Failure while running command: {" ".join(e.cmd)}')

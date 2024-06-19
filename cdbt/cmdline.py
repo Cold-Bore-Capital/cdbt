@@ -254,14 +254,18 @@ def build_unit(ctx, select):
     "--name",
     "-n",
     type=str,
-    required=True,
-    help="Name of the lightdash preview. Required.",
+    help="Name of the lightdash preview. If no name given, the preview will take the name of the current branch.",
+)
+@click.option(
+    "--l43",
+    is_flag=True,
+    help="Include L3 and L4 models in the preview. Default is False.",
 )
 @click.pass_context
-def ld_preview(ctx, select, name):
+def ld_preview(ctx, select, name, l43):
     """Start a lightdash preview for a model."""
     preview_name = name
-    cdbt_class.lightdash_start_preview(ctx, select, preview_name)
+    cdbt_class.lightdash_start_preview(ctx, select, preview_name, l43)
 
 
 @cdbt.command()

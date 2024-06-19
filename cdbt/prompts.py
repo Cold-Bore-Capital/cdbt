@@ -31,7 +31,9 @@ Primary DBT Guidelines:
     9. Do not replace or modify existing descriptions, tests, or config blocks. Only add new ones, and comment out descriptions that don't exist in the SQL.
     10. Reorder or order the column descriptions in the YML file in the same order they appear in the SQL query. If you are modifying an existing YML file, still re-order the elements, don't comment out the old element location and put a new element in.
     11. If modifying an existing YML, leave the value of materialized as is. Do not change it to `table` if it is `view` or vice versa.
-    12. Lightdash portion details:
+    12. The acronym PoP stands for "period over period". This will be some form of lookback or comparison to a prior period.
+    13. The acronym MA stands for Moving Average. This will be some sort of moving average of days, or weeks.
+    14. Lightdash portion details:
 
         We are using the lightdash system. This appends additional data to the columns of the YML file in a field called meta. For all fields, the following process should be followed. For all label values, title case should be used:
         1. If updating an existing YML and the meta parameter already exists, do not modify anything in the meta parameter. Modify other items as needed.
@@ -338,7 +340,7 @@ You will return data that looks like this. Leave this line as is for the user to
 {% endcall %}
 ```
 
-Note how the model aggregates the expected REVENUE_SUM. Do your best to aggregate the expected data based on the SQL in the input.
+Note how the model aggregates the expected REVENUE_SUM. Do your best to aggregate the expected data based on the SQL in the input. The goal is to create a model that is easy to read and hand validate.
 
 When creating the mock data, follow these guidelines:
 
@@ -346,17 +348,18 @@ When creating the mock data, follow these guidelines:
 2. For ID columns, use simple numbers. For example, 123, 456, 789, etc.
 3. For name columns, try to identify when the name should be the same for a given ID. For example, if there are 3 rows with LOCATION_ID = 123, then the LOCATION_NAME should be the same for all three rows.
 4. If a column ends in _at, it is either a date or a timestamp. If it is date, the column will end in _day_at. Timestamps will only end in _at. If the column is a date, use a date format like '2024-01-01'. If the column is a timestamp, use a timestamp format like '2024-01-01 00:00:00.000000000 -08:00'.
-5. For numeric columns, use simple numbers. For example, 25, 50, 75, etc.
-6. You will need an `mock_ref` block for each DBT model in the input SQL. DBT models will be defined as either {{ ref('model_name') }} or {{ dbt_unit_testing.ref('model_name') }}.
-7. Align the columns in the input and expected using tabs. You can use as many rows as needed.
-8. Output the data in the same format as the example. Use as many `dbt_unit_testing.mock_ref` blocks as needed.
-9. Use enough rows with variation that at least one aggregation can be created. For example, if the model groups by date and ID, you will need at least two rows with the same date and ID but different values for the columns being aggregated.
-10. Location names are always three uppercase letters followed by three numbers. For example, "ABC123" or "DEF123". Network names are always the first three uppercase letters of the network name, like "ABC" or "DEF"
-11. At the top of the file as in the example, add a --depends-on line for each moc_ref model used in the input SQL. Example, --depends-on: {{ ref('fct_appointments') }}
-12. Encapsulate any string in single or date in single quotes. Even if the sample data has long strings, truncate to no more than 30 characters, preferably even less unless the logic requires something more.
-13. Try to limit the date range in the input data to one or two days of time span, unless more is needed to fully test the logic of the model.
-14. Do not include timezones in mockup data unless the sample data provided for that model includes timezones.
-15. Do not include columns in the mock_ref blocks that are not used by the SQL model being tested.
+5. For numeric or dollar value columns, use simple numbers. For example, 10, 20.
+6. Use a minimal number of rows needed to fully exercise the logic in the function. Try to sort dates and group by locations, names, or other similar common values.
+7. You will need an `mock_ref` block for each DBT model in the input SQL. DBT models will be defined as either {{ ref('model_name') }} or {{ dbt_unit_testing.ref('model_name') }}.
+8. Align the columns in the input and expected using tabs. You can use as many rows as needed.
+9. Output the data in the same format as the example. Use as many `dbt_unit_testing.mock_ref` blocks as needed.
+10. Use enough rows with variation that at least one aggregation can be created. For example, if the model groups by date and ID, you will need at least two rows with the same date and ID but different values for the columns being aggregated.
+11. Location names are always three uppercase letters followed by three numbers. For example, "ABC123" or "DEF123". Network names are always the first three uppercase letters of the network name, like "ABC" or "DEF"
+12. At the top of the file as in the example, add a --depends-on line for each moc_ref model used in the input SQL. Example, --depends-on: {{ ref('fct_appointments') }}
+13. Encapsulate any string in single or date in single quotes. Even if the sample data has long strings, truncate to no more than 30 characters, preferably even less unless the logic requires something more.
+14. Try to limit the date range in the input data to one or two days of time span, unless more is needed to fully test the logic of the model.
+15. Do not include timezones in mockup data unless the sample data provided for that model includes timezones.
+16. Do not include columns in the mock_ref blocks that are not used by the SQL model being tested.
 Do not provide an explanation, only return the code for the test.
         """
 
