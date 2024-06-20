@@ -262,6 +262,16 @@ class ColdBoreCapitalDBT:
         self.execute_dbt_command_stream("build", args)
 
     def lightdash_start_preview(self, ctx, select, preview_name, l43):
+        # Check to make sure the LIGHTDASH_PROJECT env variable is set
+        if not os.getenv("LIGHTDASH_PROJECT"):
+            print(
+                "LIGHTDASH_PROJECT environment variable not set. Set this key to the ID of the project you will "
+                "promote charts to."
+            )
+            sys.exit(1)
+        else:
+            print(f"Building for LIGHTDASH_PROJECT: {os.getenv('LIGHTDASH_PROJECT')}")
+
         self._check_lightdash_for_updates()
         if not preview_name:
             # If no preview name, use the current name of the git branch
