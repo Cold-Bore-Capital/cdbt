@@ -262,6 +262,7 @@ class ColdBoreCapitalDBT:
         self.execute_dbt_command_stream("build", args)
 
     def lightdash_start_preview(self, ctx, select, preview_name, l43):
+        self._check_lightdash_for_updates()
         if not preview_name:
             # If no preview name, use the current name of the git branch
             result = subprocess.run(
@@ -285,6 +286,41 @@ class ColdBoreCapitalDBT:
             print(e.stderr)
             print(e.stdout)
             sys.exit(e.returncode)
+
+    @staticmethod
+    def _check_lightdash_for_updates():
+        api_str = 'curl -s "https://app.lightdash.cloud/api/v1/health"'
+
+        try:
+            result = subprocess.run(
+                api_str, shell=True, check=True, text=True, capture_output=True
+            )
+            # Convert to JSON
+            result_json = json.loads(result.stdout)
+        except subprocess.CalledProcessError as e:
+            print(f"Failure while running command: {api_str}")
+            print(e.stderr)
+            print(e.stdout)
+            sys.exit(e.returncode)
+
+        api_version = result_json["results"]["version"]
+
+        result = subprocess.run(
+            ["lightdash", "--version"], check=True, text=True, capture_output=True
+        )
+
+        current_version = result.stdout.strip()
+
+        if api_version != current_version:
+            print(
+                f"API version {api_version} does not match current version {current_version}. Upgrading."
+            )
+            args = ["npm", "install", "-g", f"@lightdash/cli@{api_version}"]
+            subprocess.run(args, check=True)
+        else:
+            print(
+                f"API version {api_version} matches current version {current_version}."
+            )
 
     def pre_commit(self, ctx):
         args = ["pre-commit", "run", "--all-files"]
