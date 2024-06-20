@@ -58,9 +58,9 @@ class BuildCBCUtilsYAML:
                 "Macro not found in the file. Please check the macro name and try again."
             )
         column_names = query_args.get("column_names")
-        ma_days = query_args.get("ma_days")
+        ma_windows = query_args.get("ma_windows")
         grain = query_args.get("grain")
-        output = self.build_ma_columns(column_names, ma_days, grain)
+        output = self.build_ma_columns(column_names, ma_windows, grain)
         print(output)
         print("\n\nResults copied to clipboard\n")
         pyperclip.copy(output)
@@ -222,7 +222,7 @@ class BuildCBCUtilsYAML:
 
         return output
 
-    def build_ma_columns(self, column_names, ma_days, grain):
+    def build_ma_columns(self, column_names, ma_windows, grain):
         output = ""
 
         grain_lookup = {
@@ -236,7 +236,7 @@ class BuildCBCUtilsYAML:
         grain_str = grain_lookup.get(grain, grain)
 
         for column_name in column_names:
-            for days in ma_days:
+            for days in ma_windows:
                 if "revenue" in column_name.lower() or "cost" in column_name.lower():
                     format_str = 'format: "usd"'
                 else:
