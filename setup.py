@@ -3,20 +3,21 @@ from setuptools import setup
 
 setup(
     name="cdbt",
-    version="0.4.4",
+    version="0.4.6",
     description="A CLI tool to manage dbt builds with state handling and manifest management",
     author="Craig Lathrop",
     author_email="development@coldborecapital.com",
     packages=find_packages(),
     install_requires=[
-        "click",
-        "pyperclip",
-        "snowflake-connector-python[pandas]",
-        "python-dotenv",
-        "openai",
-        "sqlfluff",
-        "sqlfluff-templater-dbt",
-        "wordninja",
+        "click>=8.0.0,<9.0.0",
+        "pyperclip>=1.8.0,<2.0.0",
+        "snowflake-connector-python[pandas]>=3.11.0,<4.0.0",
+        "python-dotenv>=1.0.0,<1.2.0",
+        "openai>=1.35.0,<2.0.0",
+        "sqlfluff==3.0.7",
+        "sqlfluff-templater-dbt==3.0.7",
+        "wordninja==2.0.0",
+        "ruamel.yaml<0.18.0",
     ],
     entry_points={
         "console_scripts": [

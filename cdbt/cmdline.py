@@ -7,6 +7,7 @@ from cdbt.build_unit_test_data_ai import BuildUnitTestDataAI
 from cdbt.cbc_sql_standards_system import SQLModelCleaner
 from cdbt.main import ColdBoreCapitalDBT
 from cdbt.pop_yaml_gen import BuildCBCUtilsYAML
+from cdbt.sort_yaml_fields import SortYAML
 
 cdbt_class = ColdBoreCapitalDBT()
 
@@ -59,6 +60,7 @@ class CustomCmdLoader(click.Group):
             "pre-commit",
             "pop-yaml",
             "ma-yaml",
+            "sort-yaml",
         ]
 
 
@@ -337,6 +339,13 @@ def ma_yaml(select):
     """Build the YAML Moving Avearage macro columns for a given model targeted in the select statement."""
     yml = BuildCBCUtilsYAML()
     yml.build_ma_yaml(select)
+
+
+@cdbt.command()
+@click.option("--select", "-s", type=str, help="Name of model to sort YML columns for.")
+def sort_yaml(select):
+    sy = SortYAML()
+    sy.main(select)
 
 
 @cdbt.command()

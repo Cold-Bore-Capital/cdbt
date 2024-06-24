@@ -8,3 +8,4 @@ sqlfluff-templater-dbt
 wordninja
 build
 twine
+ruamel.yaml<0.18.0
