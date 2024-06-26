@@ -343,9 +343,11 @@ def ma_yaml(select):
 
 @cdbt.command()
 @click.option("--select", "-s", type=str, help="Name of model to sort YML columns for.")
-def sort_yaml(select):
+@click.option('--all-files', is_flag=True, help='Sort all YML files in the project.')
+@click.option('--overwrite', is_flag=True, help='Overwrite the existing YML file.')
+def sort_yaml(select, all_files, overwrite):
     sy = SortYAML()
-    sy.main(select)
+    sy.main(select, all_files, overwrite)
 
 
 @cdbt.command()

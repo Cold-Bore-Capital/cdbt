@@ -1,7 +1,7 @@
 # Using this instead of the default as it preserves the order of keys in the dictionary.
 import os
 import sys
-from typing import Any
+from typing import Any, Tuple, List, Optional
 from typing import Dict
 
 import pyperclip
@@ -24,26 +24,57 @@ class SortYAML(AiCore):
         self.yaml = YAML(typ="rt")
         self.yaml.preserve_quotes = True
         self.yaml.explicit_start = True
+        self.yaml.indent(mapping=2, sequence=4, offset=2)
 
-    def main(self, select: str):
-        schema_file, table_name = self._get_schema_path_and_table(select)
-        schema_data = self.read_yml(schema_file)
-        db_columns = self.get_db_columns(table_name)
-        updated_schema = self.reorganize_columns(schema_data, db_columns)
-        self.save_yml_to_clipboard(updated_schema)
+    def main(self, select: Optional[str] = None, all_files: Optional[bool] = False, overwrite: Optional[bool] = False):
+        models = self._get_models(select, all_files)
+        if len(models) > 1 and not overwrite:
+            raise ValueError(
+                "Multiple models found. Default copy to clipboard only works with one model. Use the --overwrite flag "
+                "if processing more than one model at a time."
+            )
+        if not models:
+            raise ValueError(f"No models found for select '{select}'")
 
-    def _get_schema_path_and_table(self, select: str):
+        for model in models:
+            original_file_path = model["original_file_path"]
+            model_name = model["name"]
+            schema_file, table_name = self._get_schema_path_and_table(original_file_path=original_file_path,
+                                                                      model_name=model_name)
+            schema_data = self.read_yml(schema_file)
+            db_columns = self.get_db_columns(table_name)
+            updated_schema = self.reorganize_columns(schema_data, db_columns)
+
+            if overwrite:
+                with open(schema_file, "w") as stream:
+                    self.yaml.dump(updated_schema, stream, transform=self.clean_top_line)
+                self.yaml.dump(updated_schema, sys.stdout, transform=self.clean_top_line)
+                print(f"Schema file '{schema_file}' updated")
+            else:
+                self.save_yml_to_clipboard(updated_schema)
+
+            a = 0
+
+    def _get_models(self, select: str, all_files: bool) -> List[Dict[str, Any]]:
         cbc = ColdBoreCapitalDBT()
-        args = ["--select", select]
+        if not all_files:
+            args = ["--select", select, '--exclude', 'resource_type:test resource_type:seed resource_type:snapshot resource_type:source']
+        else:
+            args = ['--exclude', 'resource_type:test resource_type:seed resource_type:snapshot resource_type:source']
         ls_json = cbc.dbt_ls_to_json(args)
-        schema_file = ls_json[0]["original_file_path"][:-3] + "yml"
+
+        return ls_json
+
+    @staticmethod
+    def _get_schema_path_and_table(original_file_path: str, model_name: str) -> Tuple[str, str]:
+        schema_file = original_file_path[:-3] + "yml"
         schema = os.environ.get("DEV_SCHEMA")
         if not schema:
             raise ValueError("DEV_SCHEMA environment variable is not set")
         database = os.environ.get("DEV_DATABASE")
         if not database:
             raise ValueError("DEV_DATABASE environment variable is not set")
-        table_name = f"{database}.{schema}.{select}"
+        table_name = f"{database}.{schema}.{model_name}"
         print(f"Schema file: {schema_file}")
         print(f"Table name: {table_name}")
         return schema_file, table_name
@@ -59,12 +90,16 @@ class SortYAML(AiCore):
         self.yaml.dump(data, sys.stdout, transform=self.copy_to_clip)
         print("Sorted YAML schema copied to clipboard!")
 
-    def copy_to_clip(self, string_yaml: str):
+    def copy_to_clip(self, string_yaml: str) -> str:
         # Remove the first line of the string
-        str_lines = string_yaml.split("\n")
-        string_yaml = "\n".join(str_lines[1:])
+        string_yaml = self.clean_top_line(string_yaml)
         pyperclip.copy(string_yaml)
         print("Sorted YAML schema copied to clipboard!")
+        return string_yaml
+
+    def clean_top_line(self, string_yaml: str) -> str:
+        str_lines = string_yaml.split("\n")
+        string_yaml = "\n".join(str_lines[1:])
         return string_yaml
 
     def get_db_columns(self, table_name: str) -> list:
@@ -87,26 +122,6 @@ class SortYAML(AiCore):
         return schema_data
 
 
-# # This is used to maintain the order of keys in the dictionary on write back to YAML
-# def dict_representer(dumper, data):
-#     return dumper.represent_dict(data.items())
-# yaml.add_representer(OrderedDict, dict_representer)
-# # Add a custom representer to handle normal dictionaries same as OrderedDicts
-# yaml.add_representer(dict, dict_representer)
-#
-# # define a custom representer for strings
-# def quoted_presenter(dumper, data):
-#     return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='"')
-#
-# yaml.add_representer(str, quoted_presenter)
-#
-# class CustomDumper(yaml.Dumper):
-#     def represent_data(self, data):
-#         if isinstance(data, str) and data.isdigit():
-#             return self.represent_scalar('tag:yaml.org,2002:str', data, style="'")
-#
-#         return super(CustomDumper, self).represent_data(data)
-
-
 if __name__ == "__main__":
-    pass
+    y = SortYAML()
+    y.main(select=None, all_files=True, overwrite=True)
