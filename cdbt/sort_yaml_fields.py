@@ -1,8 +1,11 @@
 # Using this instead of the default as it preserves the order of keys in the dictionary.
 import os
 import sys
-from typing import Any, Tuple, List, Optional
+from typing import Any
 from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
 
 import pyperclip
 from dotenv import find_dotenv
@@ -26,7 +29,12 @@ class SortYAML(AiCore):
         self.yaml.explicit_start = True
         self.yaml.indent(mapping=2, sequence=4, offset=2)
 
-    def main(self, select: Optional[str] = None, all_files: Optional[bool] = False, overwrite: Optional[bool] = False):
+    def main(
+        self,
+        select: Optional[str] = None,
+        all_files: Optional[bool] = False,
+        overwrite: Optional[bool] = False,
+    ):
         models = self._get_models(select, all_files)
         if len(models) > 1 and not overwrite:
             raise ValueError(
@@ -39,34 +47,47 @@ class SortYAML(AiCore):
         for model in models:
             original_file_path = model["original_file_path"]
             model_name = model["name"]
-            schema_file, table_name = self._get_schema_path_and_table(original_file_path=original_file_path,
-                                                                      model_name=model_name)
+            schema_file, table_name = self._get_schema_path_and_table(
+                original_file_path=original_file_path, model_name=model_name
+            )
             schema_data = self.read_yml(schema_file)
             db_columns = self.get_db_columns(table_name)
             updated_schema = self.reorganize_columns(schema_data, db_columns)
 
             if overwrite:
                 with open(schema_file, "w") as stream:
-                    self.yaml.dump(updated_schema, stream, transform=self.clean_top_line)
-                self.yaml.dump(updated_schema, sys.stdout, transform=self.clean_top_line)
+                    self.yaml.dump(
+                        updated_schema, stream, transform=self.clean_top_line
+                    )
+                self.yaml.dump(
+                    updated_schema, sys.stdout, transform=self.clean_top_line
+                )
                 print(f"Schema file '{schema_file}' updated")
             else:
                 self.save_yml_to_clipboard(updated_schema)
 
-            a = 0
-
     def _get_models(self, select: str, all_files: bool) -> List[Dict[str, Any]]:
         cbc = ColdBoreCapitalDBT()
         if not all_files:
-            args = ["--select", select, '--exclude', 'resource_type:test resource_type:seed resource_type:snapshot resource_type:source']
+            args = [
+                "--select",
+                select,
+                "--exclude",
+                "resource_type:test resource_type:seed resource_type:snapshot resource_type:source",
+            ]
         else:
-            args = ['--exclude', 'resource_type:test resource_type:seed resource_type:snapshot resource_type:source']
+            args = [
+                "--exclude",
+                "resource_type:test resource_type:seed resource_type:snapshot resource_type:source",
+            ]
         ls_json = cbc.dbt_ls_to_json(args)
 
         return ls_json
 
     @staticmethod
-    def _get_schema_path_and_table(original_file_path: str, model_name: str) -> Tuple[str, str]:
+    def _get_schema_path_and_table(
+        original_file_path: str, model_name: str
+    ) -> Tuple[str, str]:
         schema_file = original_file_path[:-3] + "yml"
         schema = os.environ.get("DEV_SCHEMA")
         if not schema:
