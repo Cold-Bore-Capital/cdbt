@@ -80,9 +80,9 @@ Primary DBT Guidelines:
         ```
 
         3. Metric fields. A metric field is any value that isn't an ID, and is numeric. We will define a dimension for these fields to hide them. For each of these fields, add a default sum and average metric. The sum label is just the name of the measure. Do not append "sum" to the end. For average, add the word "- Avg" to the end of the label.
-        
+
         Each metric will need one or more groups assigned. Groups are assigned to a metric via the `groups: ["<group name>"]` key. These groups must be defined in the top level `config` block using the `group_details` attribute like this:
-        
+
         ```
         group_details:
             revenue:
@@ -90,7 +90,7 @@ Primary DBT Guidelines:
             counts:
                 label: "Counts"
         ```
-        
+
         a. If the measure has "revenue" or "cost" in the name and the sample data shows values in the thousands or millions, add:
         ```
         format: "usd"
