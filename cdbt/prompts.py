@@ -1,23 +1,16 @@
 class Prompts:
-    """
-    Holding: @ todo: something with this like a local config.
-        1. These models are all veterinary related.
-        2. VS is shorthand for Vetspire. Vetspire is a veterinary software practice management company.
-    """
 
     @property
     def dbt_docs_gte_l3_prompt(self):
         return """
 You will help build DBT documentation YML files for a given SQL query. Sometimes you will be asked to generate a description from scratch, other times you will be asked to fill in missing columns that exist in the model, but not in the documentation.
 
-
 Primary DBT Guidelines:
 
     3. Include a config block for each model:
         a. Set `materialized` to `table`
         b. Do not include a `sort` key.
-    4. Do not add any tests. This model is part of the L1 or L2 layer and does not get tested.
-    5. For long descriptions, use the following format so the lines are not too long:
+    4. For long descriptions, use the following format so the lines are not too long:
         ```
         - name: replacement_plan_id
           description: >
@@ -25,15 +18,15 @@ Primary DBT Guidelines:
             started within 5 days before, or up to 30 days after the end date of the prior plan and is not
             an add-on plan.
         ```
-    6. If you find a column that is in the existing documentation, but not in the model, comment it out with a `#` at the start of each line.
-    7. Only return the YML documentation file contents. Do not provide an explanation.
-    8. Always place a new line between the end of the `description` line and the start of the next column name identified by `- name:`.
-    9. Do not replace or modify existing descriptions, tests, or config blocks. Only add new ones, and comment out descriptions that don't exist in the SQL.
-    10. Reorder or order the column descriptions in the YML file in the same order they appear in the SQL query. If you are modifying an existing YML file, still re-order the elements, don't comment out the old element location and put a new element in.
-    11. If modifying an existing YML, leave the value of materialized as is. Do not change it to `table` if it is `view` or vice versa.
-    12. The acronym PoP stands for "period over period". This will be some form of lookback or comparison to a prior period.
-    13. The acronym MA stands for Moving Average. This will be some sort of moving average of days, or weeks.
-    14. Lightdash portion details:
+    5. If you find a column that is in the existing documentation, but not in the model, comment it out with a `#` at the start of each line.
+    6. Only return the YML documentation file contents. Do not provide an explanation.
+    7. Always place a new line between the end of the `description` line and the start of the next column name identified by `- name:`.
+    8. If updating and existing file, do not replace or modify existing descriptions, data_tests:, or config blocks. Only add new ones, and comment out descriptions that don't exist in the SQL.
+    9. Reorder or order the column descriptions in the YML file in the same order they appear in the SQL query. If you are modifying an existing YML file, still re-order the elements, don't comment out the old element location and put a new element in.
+    10. If modifying an existing YML, leave the value of materialized as is. Do not change it to `table` if it is `view` or vice versa.
+    11. The acronym PoP stands for "period over period". This will be some form of lookback or comparison to a prior period.
+    12. The acronym MA stands for Moving Average. This will be some sort of moving average of days, or weeks.
+    13. Lightdash portion details:
 
         We are using the lightdash system. This appends additional data to the columns of the YML file in a field called meta. For all fields, the following process should be followed. For all label values, title case should be used:
         1. If updating an existing YML and the meta parameter already exists, do not modify anything in the meta parameter. Modify other items as needed.
@@ -46,11 +39,11 @@ Primary DBT Guidelines:
           hidden: true
         ```
 
-        b. If the field is a date, add the following structure. For the label, split the name at the underscore and replace at with date. For example, if the field is order_date, the label would be "Order Date":
+        b. If the field is a date it will have _at either at the end or in the middle. For example, date_at, order_at_month, order_at_year. Add the following structure. For the label, split the name at the underscore and replace at with date. For example, if the field is order_date, the label would be "Order Date":
         ```
         - name: order_at
           description: "The date associated with the order."
-          tests:
+           data_tests:
             - not_null
           meta:
             dimension:
@@ -58,6 +51,7 @@ Primary DBT Guidelines:
               label: "Order Date"
               time_intervals: [ "DAY", "WEEK", "MONTH", "QUARTER" ]
         ```
+        If the name of the field contains "month", exclude "DAY", and "WEEK". If it contains "YEAR", exclude "DAY", "WEEK", and "MONTH".
 
         c. If the field is a boolean, replace the label with the name of the field, remove is_ from the prefix, and add "Flag". For example, is_active would become "Active Flag" and add the following structure:
         ```
@@ -85,10 +79,12 @@ Primary DBT Guidelines:
 
         ```
         group_details:
+            example_top_level_grp:
+              label: "Example Top Level Group"
             revenue:
-                label: "Revenue"
+              label: "Revenue"
             counts:
-                label: "Counts"
+              label: "Counts"
         ```
 
         a. If the measure has "revenue" or "cost" in the name and the sample data shows values in the thousands or millions, add:
@@ -96,7 +92,7 @@ Primary DBT Guidelines:
         format: "usd"
         round: 0
         compact: thousands
-        groups: ["Revenue"]
+        groups: ["revenue"]
         ```
           if the sample data is typically in the hundreds, do not add `compact: thousands`. to the output.
 
@@ -104,7 +100,7 @@ Primary DBT Guidelines:
         ```
         round: 0
         compact: thousands
-        groups: ["Counts"]
+        groups: ["example_top_level_grp", "counts"]
         ```
             if the sample data is typically in the hundreds, do not add `compact: thousands`. to the output.
 
@@ -129,8 +125,29 @@ Primary DBT Guidelines:
                 format: "usd"
                 round: 0
                 compact: thousands
-                groups: ["Revenue"]
+                groups: ["revenue"]
         ```
+
+        4. For grouping, try to cluster measures and dimensions based on commonalities. For these guidelines, when I say "measures or dimensions", I mean treat them seperatly. If there are 3 dimensions and 20 measures, you would only use a single grouping level for the dimensions, and up to three levels for metrics. Use the following guidelines:
+            - If less than 6 measures or dimensions, only provide one grouping level.
+            - If 6 or more measures or dimensions, provide two grouping levels if there is a logical division. For example, some metrics might apply to current period and could be added to the `current` group, with a sub group like `groups: ['current', 'revenue']`.
+            - If there are more than 15 measures or dimensions, you can nest up to a third level of grouping.
+
+        5. If there is an primary key ID column as the first field, then add a
+           ```
+           data_tests:
+             - unique
+             - not_null
+           ```
+
+          If the first column is not a primary key ID column, then use a "unique_combination_of_columns" test like this:
+            ```
+            data_tests:
+              - dbt_utils.unique_combination_of_columns:
+                  combination_of_columns:
+                    - month_at
+                    - network_name
+            ```
 
 
 
@@ -147,15 +164,19 @@ models:
     config:
       materialized: table
       group_details:
+        appointments:
+          label: "Appointments"
+        financial:
+          label: "Financial Metrics"
         revenue:
-            label: "Revenue"
+          label: "Revenue"
         counts:
-            label: "Counts"
+          label: "Counts"
 
     columns:
       - name: order_at
         description: "The date associated with the order."
-        tests:
+         data_tests:
           - not_null
         meta:
           dimension:
@@ -195,7 +216,7 @@ models:
               format: "usd"
               round: 0
               compact: thousands
-              groups: ["Revenue"]
+              groups: ["financial", "revenue"]
 
       - name: medical_appointment_count
         description: "Count of medical appointments."
@@ -209,7 +230,7 @@ models:
               description: "Count of medical appointments."
               round: 0
               compact: thousands
-              groups: ["Count"]
+              groups: ["appointments", "count"]
 
 ```
 
@@ -228,7 +249,7 @@ Primary DBT Guidelines:
         a. Set `materialized` to `view`
         b. Do not include a `sort` key.
         c. If the model name ends in `_mat` set materialized to `table`.
-    4. Add tests `unique` and `not_null` to the primary key only. Do not add tests to any other columns.
+    4. Add data_tests: `unique` and `not_null` to the primary key only. Do not add data_tests: to any other columns.
     5. For long descriptions, use the following format so the lines are not too long:
         ```
         - name: replacement_plan_id
@@ -240,7 +261,7 @@ Primary DBT Guidelines:
     6. If you find a column that is in the existing documentation, but not in the model, comment it out with a `#` at the start of each line.
     7. Only return the YML documentation file contents. Do not provide an explanation.
     8. Always place a new line between the end of the `description` line and the start of the next column name identified by `- name:`.
-    9. Do not replace or modify existing descriptions, tests, or config blocks. Only add new ones, and comment out descriptions that don't exist in the SQL.
+    9. Do not replace or modify existing descriptions, data_tests:, or config blocks. Only add new ones, and comment out descriptions that don't exist in the SQL.
     10. Reorder or order the column descriptions in the YML file in the same order they appear in the SQL query. If you are modifying an existing YML file, still re-order the elements, don't comment out the old element location and put a new element in.
     11. If modifying an existing YML, leave the value of materialized as is. Do not change it to `table` if it is `view` or vice versa.
     12. Lightdash portion details:
@@ -295,7 +316,7 @@ This is a CSV data sample from the model:
     def build_unit_test_prompt(self):
 
         return """
-You will help build mockup input and expected output data for DBT unit tests using the EqualExperts/dbt_unit_testing package. The input and expect data will be in a CSV type format using | as a seperator between fields.
+You will help build mockup input and expected output data for DBT unit data_tests: using the EqualExperts/dbt_unit_testing package. The input and expect data will be in a CSV type format using | as a seperator between fields.
 
 The user will pass a SQL DBT model that looks like this as input:
 ```
