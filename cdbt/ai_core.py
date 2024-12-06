@@ -21,7 +21,7 @@ import openai
 class AiCore:
 
     def __init__(self):
-        self.model = "gpt-4o"
+        self.model = "o1-mini"
         # Make sure you have OPENAI_API_KEY set in your environment variables.
         self.client = openai.OpenAI()
 
@@ -137,17 +137,6 @@ class AiCore:
 
     @staticmethod
     def extract_sql(log):
-        sql_lines = [
-            line
-            for line in log.splitlines()
-            if not re.match(r"^\x1b\[0m\d{2}:\d{2}:\d{2}", line)
-        ]
-        # Edge case when there are unused config paths
-        sql_lines = [
-            line
-            for line in log.splitlines()
-            if not re.match(r"There are \d+ unused configuration paths:", line)
-        ]
         sql_lines = [line for line in log.splitlines() if not re.match(r"--\s.*", line)]
 
         keyword_line_index = 0
