@@ -155,6 +155,13 @@ def clip_compile(ctx, select):
 
 
 @cdbt.command()
+@click.pass_context
+def recce(ctx):
+    """Run a recce of the current state of the project."""
+    cdbt_class.recce(ctx)
+
+
+@cdbt.command()
 @click.option(
     "--full-refresh",
     "-f",

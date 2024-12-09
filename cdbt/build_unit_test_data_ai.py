@@ -23,7 +23,7 @@ logging.getLogger("snowflake.connector").setLevel(logging.WARNING)
 class BuildUnitTestDataAI(AiCore):
 
     def __init__(self):
-        super().__init__()
+        super().__init__(model="o1-preview")
 
     def main(self, model_name: str):
 
@@ -47,15 +47,20 @@ class BuildUnitTestDataAI(AiCore):
         sample_data = self._get_sample_data_from_snowflake(models_in_model_file)
 
         prompt = self.build_prompt(
-            self.prompts.build_unit_test_prompt, model_name, input_sql, sample_data
+            self.prompts.build_unit_test_prompt.format(model_name=model_name),
+            model_name,
+            input_sql,
+            sample_data,
         )
+
+        print(f"##################\n{prompt}\n##################")
 
         messages = [
             {
-                "role": "system",
-                "content": "You are helping to build unit tests for DBT (database build tools) models.",
+                "role": "user",
+                "content": "You are helping to build unit tests for DBT (database build tools) models.\n"
+                + prompt,
             },
-            {"role": "user", "content": prompt},
         ]
 
         response = self.send_message(messages)

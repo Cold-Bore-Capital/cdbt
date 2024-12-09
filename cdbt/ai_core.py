@@ -20,8 +20,8 @@ import openai
 
 class AiCore:
 
-    def __init__(self):
-        self.model = "o1-mini"
+    def __init__(self, model: str = "o1-mini"):
+        self.model = model
         # Make sure you have OPENAI_API_KEY set in your environment variables.
         self.client = openai.OpenAI()
 

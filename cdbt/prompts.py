@@ -132,6 +132,7 @@ Primary DBT Guidelines:
             - If less than 6 measures or dimensions, only provide one grouping level.
             - If 6 or more measures or dimensions, provide two grouping levels if there is a logical division. For example, some metrics might apply to current period and could be added to the `current` group, with a sub group like `groups: ['current', 'revenue']`.
             - If there are more than 15 measures or dimensions, you can nest up to a third level of grouping.
+            - Network and Location related items should be grouped together. Locations belong to networks. These should be grouped under `locations` with label `Location Details`.
 
         5. If there is an primary key ID column as the first field, then add a
            ```
@@ -338,16 +339,17 @@ group by revenue_day_at
        , product_type_name
 ```
 
-You will return data that looks like this. Leave this line as is for the user to fill in `{% call dbt_unit_testing.test('model_name', 'Description of Test') %}` :
+You will return data that looks like this.
+Use this line for the dbt_unit_tests.test (name is filled in) `{{% call dbt_unit_testing.test('{model_name}', '{model_name} unit test') %}}` :
 
 ```
-{{ config(tags=['unit-test']) }}
+{{{{ config(tags=['unit-test']) }}}}
 
---depends-on: {{ ref('fct_appointments') }}
+--depends-on: {{{{ ref('fct_appointments') }}}}
 
-{% call dbt_unit_testing.test('model_name', 'Description of Test') %}
+{{% call dbt_unit_testing.test('model_name', 'Description of Test') %}}
 
-    {% call dbt_unit_testing.mock_ref('fct_order_items_mat', options={"input_format": "csv"}) %}
+    {{% call dbt_unit_testing.mock_ref('fct_order_items_mat', options={"input_format": "csv"}) %}}
 
     ORDER_ITEM_AT                          |LOCATION_ID |IS_MEDICAL_REVENUE |IS_PLAN_PAYMENT |LOCATION_NAME | PRODUCT_TYPE_NAME    | TOTAL_BEFORE_TAX
     '2024-01-01 00:00:00.000000000 -08:00' |123         |TRUE               |TRUE            |'ABC123'      | 'Product 1'          | 25
@@ -360,9 +362,9 @@ You will return data that looks like this. Leave this line as is for the user to
     '2024-01-01 00:00:00.000000000 -08:00' |987         |TRUE               |FALSE           |'DEF123'      | 'Product 2'          | 25
     '2024-01-01 00:00:00.000000000 -08:00' |987         |FALSE              |FALSE           |'DEF123'      | 'Product 2'          | 25
 
-    {% endcall %}
+    {{% endcall %}}
 
-    {% call dbt_unit_testing.expect({"input_format": "csv"}) %}
+    {{% call dbt_unit_testing.expect({"input_format": "csv"}) %}}
 
     REVENUE_DAY_AT |LOCATION_ID |IS_MEDICAL_REVENUE |IS_PLAN_PAYMENT |LOCATION_NAME  |PRODUCT_TYPE_NAME |REVENUE_SUM
     '2024-01-01'   |123         |TRUE               |TRUE            |'ABC123'       |'Product 1'       |50
@@ -372,8 +374,8 @@ You will return data that looks like this. Leave this line as is for the user to
     '2024-01-01'   |987         |TRUE               |FALSE           |'DEF123'       |'Product 2'       |25
     '2024-01-01'   |987         |FALSE              |FALSE           |'DEF123'       |'Product 2'       |25
 
-    {% endcall %}
-{% endcall %}
+    {{% endcall %}}
+{{% endcall %}}
 ```
 
 Note how the model aggregates the expected REVENUE_SUM. Do your best to aggregate the expected data based on the SQL in the input. The goal is to create a model that is easy to read and hand validate.
@@ -396,6 +398,7 @@ When creating the mock data, follow these guidelines:
 14. Try to limit the date range in the input data to one or two days of time span, unless more is needed to fully test the logic of the model.
 15. Do not include timezones in mockup data unless the sample data provided for that model includes timezones.
 16. Do not include columns in the mock_ref blocks that are not used by the SQL model being tested.
+17. All dates and strings must be enclosed in single quotes in the mock data.
 Do not provide an explanation, only return the code for the test.
         """
 

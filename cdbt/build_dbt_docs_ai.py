@@ -60,8 +60,7 @@ class BuildDBTDocs(AiCore):
             raise ValueError("Invalid mode")
 
         messages = [
-            {"role": "system", "content": system_instructions},
-            {"role": "user", "content": user_input},
+            {"role": "user", "content": system_instructions + "\n" + user_input}
         ]
 
         assistant_responses = []

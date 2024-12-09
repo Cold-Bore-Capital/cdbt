@@ -37,10 +37,7 @@ class ColdBoreCapitalDBT:
         try:
             run_result = self.execute_dbt_command_stream("build", args)
         except subprocess.CalledProcessError as e:
-            print(f'Failure while running command: {" ".join(e.cmd)}')
-            print(e.stderr)
-            print(e.stdout)
-            sys.exit(e.returncode)
+            self.handle_cmd_line_error(e)
 
         if not run_result:
             raise DbtError("DBT build failed with errors.")
@@ -57,10 +54,7 @@ class ColdBoreCapitalDBT:
         try:
             run_result = self.execute_dbt_command_stream("build", args)
         except subprocess.CalledProcessError as e:
-            print(f'Failure while running command: {" ".join(e.cmd)}')
-            print(e.stderr)
-            print(e.stdout)
-            sys.exit(e.returncode)
+            self.handle_cmd_line_error(e)
 
         if not run_result:
             raise DbtError("DBT build failed with errors.")
@@ -76,10 +70,7 @@ class ColdBoreCapitalDBT:
         try:
             run_result = self.execute_dbt_command_stream("run", args)
         except subprocess.CalledProcessError as e:
-            print(f'Failure while running command: {" ".join(e.cmd)}')
-            print(e.stderr)
-            print(e.stdout)
-            sys.exit(e.returncode)
+            self.handle_cmd_line_error(e)
 
         if not run_result:
             raise DbtError("DBT build failed with errors.")
@@ -90,10 +81,7 @@ class ColdBoreCapitalDBT:
         try:
             run_result = self.execute_dbt_command_stream("test", args)
         except subprocess.CalledProcessError as e:
-            print(f'Failure while running command: {" ".join(e.cmd)}')
-            print(e.stderr)
-            print(e.stdout)
-            sys.exit(e.returncode)
+            self.handle_cmd_line_error(e)
 
         if not run_result:
             raise DbtError("DBT build failed with errors.")
@@ -105,10 +93,7 @@ class ColdBoreCapitalDBT:
         try:
             run_result = self.execute_dbt_command_stream("test", args)
         except subprocess.CalledProcessError as e:
-            print(f'Failure while running command: {" ".join(e.cmd)}')
-            print(e.stderr)
-            print(e.stdout)
-            sys.exit(e.returncode)
+            self.handle_cmd_line_error(e)
 
         if not run_result:
             raise DbtError("DBT build failed with errors.")
@@ -118,10 +103,7 @@ class ColdBoreCapitalDBT:
         try:
             self.execute_dbt_command_stream("compile", [])
         except subprocess.CalledProcessError as e:
-            print(f'Failure while running command: {" ".join(e.cmd)}')
-            print(e.stderr)
-            print(e.stdout)
-            sys.exit(e.returncode)
+            self.handle_cmd_line_error(e)
 
     def clip_compile(self, ctx: Context, select):
         # We ignore the ctx object as compile has no threads.
@@ -132,10 +114,67 @@ class ColdBoreCapitalDBT:
             results = self.extract_sql_code(results)
             pyperclip.copy(results)
         except subprocess.CalledProcessError as e:
-            print(f'Failure while running command: {" ".join(e.cmd)}')
-            print(e.stderr)
-            print(e.stdout)
-            sys.exit(e.returncode)
+            self.handle_cmd_line_error(e)
+
+    def recce(self, ctx: Context):
+        print("Downloading production artifacts.")
+        current_dir = os.getcwd()
+        # Initialize variables
+        target_path = None
+        logs = None
+        # Check if current directory ends with 'transform'
+        if current_dir.endswith("transform"):
+            target_path = os.path.join("target-base")
+            logs = os.path.join("logs")
+        elif os.path.isdir(os.path.join(current_dir, "transform")):
+            target_path = os.path.join("transform", "target-base")
+            logs = os.path.join("transform", "logs")
+        else:
+            raise FileNotFoundError(
+                "No 'transform' directory found in the current execution directory."
+            )
+        os.makedirs(target_path, exist_ok=True)
+
+        # Delete all files in target_path
+        for file_name in os.listdir(target_path):
+            file_path = os.path.join(target_path, file_name)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+
+        # Pull artifacts from Snowflake. These are the latest production artifacts.
+        try:
+            if not self.test_mode:
+                subprocess.run(
+                    ["dbt", "run-operation", "get_last_artifacts"], check=True
+                )
+        except subprocess.CalledProcessError as e:
+            self.handle_cmd_line_error(e)
+
+        # Copy files from logs to target_path
+        if os.path.isdir(logs):
+            for file_name in os.listdir(logs):
+                full_file_path = os.path.join(logs, file_name)
+                if os.path.isfile(full_file_path):
+                    shutil.copy(full_file_path, target_path)
+        else:
+            raise FileNotFoundError(
+                f"'logs' directory not found at expected path: {logs}"
+            )
+
+        # Start recce server
+        try:
+            if not self.test_mode:
+                subprocess.run(["dbt", "docs", "generate"], check=True)
+                subprocess.run(["recce", "server"], check=True)
+        except subprocess.CalledProcessError as e:
+            self.handle_cmd_line_error(e)
+
+    def handle_cmd_line_error(self, e):
+        print(f'Failure while running command: {" ".join(e.cmd)}')
+        print(e.stderr)
+        print(e.stdout)
+        raise Exception(f"Failure while running command: {' '.join(e.cmd)}")
+        # sys.exit(e.returncode)
 
     def sbuild(self, ctx: Context, full_refresh, threads):
         print("Starting a state build based on local manifest.json")
@@ -167,10 +206,7 @@ class ColdBoreCapitalDBT:
                     ["dbt", "run-operation", "get_last_artifacts"], check=True
                 )
         except subprocess.CalledProcessError as e:
-            print(f'Failure while running command: {" ".join(e.cmd)}')
-            print(e.stderr)
-            print(e.stdout)
-            sys.exit(e.returncode)
+            self.handle_cmd_line_error(e)
 
         manifest_path = os.path.join("", target_dir, "manifest.json")
         manifest_artifact_path = os.path.join("", artifact_dir, "manifest.json")
@@ -292,10 +328,7 @@ class ColdBoreCapitalDBT:
             print(f'Running command: {" ".join(args)}')
             subprocess.run(args, check=True)
         except subprocess.CalledProcessError as e:
-            print(f'Failure while running command: {" ".join(e.cmd)}')
-            print(e.stderr)
-            print(e.stdout)
-            sys.exit(e.returncode)
+            self.handle_cmd_line_error(e)
 
     @staticmethod
     def _check_lightdash_for_updates():
@@ -338,10 +371,7 @@ class ColdBoreCapitalDBT:
         try:
             subprocess.run(args, check=True)
         except subprocess.CalledProcessError as e:
-            print(f'Failure while running command: {" ".join(e.cmd)}')
-            print(e.stderr)
-            print(e.stdout)
-            sys.exit(e.returncode)
+            self.handle_cmd_line_error(e)
 
     def format(self, ctx: Context, select, all=False, main=False):
         """
@@ -428,10 +458,7 @@ class ColdBoreCapitalDBT:
             if not self.test_mode:
                 subprocess.run(["dbt", "compile"], check=True)
         except subprocess.CalledProcessError as e:
-            print(f'Failure while running command: {" ".join(e.cmd)}')
-            print(e.stderr)
-            print(e.stdout)
-            sys.exit(e.returncode)
+            self.handle_cmd_line_error(e)
 
         # Construct state commands
         build_children = ctx.obj.get("build_children", False)
