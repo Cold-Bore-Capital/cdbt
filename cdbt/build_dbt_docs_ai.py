@@ -31,7 +31,7 @@ class BuildDBTDocs(AiCore):
         )
         mode = int(input())
         print("Getting file.")
-        sql_file_path = self._get_file_path(model_name)
+        sql_file_path = self.get_file_path(model_name)
 
         if "l4" in sql_file_path.lower() or "l3" in sql_file_path.lower():
             system_instructions = Prompts().dbt_docs_gte_l3_prompt

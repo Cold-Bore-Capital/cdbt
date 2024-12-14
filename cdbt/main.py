@@ -9,22 +9,13 @@ import typing as t
 import pyperclip
 from click.core import Command
 from click.core import Context
-from dotenv import find_dotenv
-from dotenv import load_dotenv
+from cdbt.core import Core
 
-load_dotenv(find_dotenv("../.env"))
-load_dotenv(find_dotenv(".env"))
-
-
-class ColdBoreCapitalDBT:
+class ColdBoreCapitalDBT(Core):
 
     def __init__(self, test_mode: bool = False):
-        self.test_mode = test_mode
-        self.dbt_ls_test_mode_output = None
-        self.dbt_test_mode_command_check_value = None
-        self.exclude_seed_snapshot = "resource_type:snapshot resource_type:seed"
+        super().__init__(test_mode=test_mode)
 
-        self.dbt_execute_command_output = ""
 
     def build(self, ctx: Context, full_refresh, select, fail_fast, threads):
         flags = {
@@ -115,66 +106,6 @@ class ColdBoreCapitalDBT:
             pyperclip.copy(results)
         except subprocess.CalledProcessError as e:
             self.handle_cmd_line_error(e)
-
-    def recce(self, ctx: Context):
-        print("Downloading production artifacts.")
-        current_dir = os.getcwd()
-        # Initialize variables
-        target_path = None
-        logs = None
-        # Check if current directory ends with 'transform'
-        if current_dir.endswith("transform"):
-            target_path = os.path.join("target-base")
-            logs = os.path.join("logs")
-        elif os.path.isdir(os.path.join(current_dir, "transform")):
-            target_path = os.path.join("transform", "target-base")
-            logs = os.path.join("transform", "logs")
-        else:
-            raise FileNotFoundError(
-                "No 'transform' directory found in the current execution directory."
-            )
-        os.makedirs(target_path, exist_ok=True)
-
-        # Delete all files in target_path
-        for file_name in os.listdir(target_path):
-            file_path = os.path.join(target_path, file_name)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
-
-        # Pull artifacts from Snowflake. These are the latest production artifacts.
-        try:
-            if not self.test_mode:
-                subprocess.run(
-                    ["dbt", "run-operation", "get_last_artifacts"], check=True
-                )
-        except subprocess.CalledProcessError as e:
-            self.handle_cmd_line_error(e)
-
-        # Copy files from logs to target_path
-        if os.path.isdir(logs):
-            for file_name in os.listdir(logs):
-                full_file_path = os.path.join(logs, file_name)
-                if os.path.isfile(full_file_path):
-                    shutil.copy(full_file_path, target_path)
-        else:
-            raise FileNotFoundError(
-                f"'logs' directory not found at expected path: {logs}"
-            )
-
-        # Start recce server
-        try:
-            if not self.test_mode:
-                subprocess.run(["dbt", "docs", "generate"], check=True)
-                subprocess.run(["recce", "server"], check=True)
-        except subprocess.CalledProcessError as e:
-            self.handle_cmd_line_error(e)
-
-    def handle_cmd_line_error(self, e):
-        print(f'Failure while running command: {" ".join(e.cmd)}')
-        print(e.stderr)
-        print(e.stdout)
-        raise Exception(f"Failure while running command: {' '.join(e.cmd)}")
-        # sys.exit(e.returncode)
 
     def sbuild(self, ctx: Context, full_refresh, threads):
         print("Starting a state build based on local manifest.json")
@@ -297,145 +228,6 @@ class ColdBoreCapitalDBT:
 
         self.execute_dbt_command_stream("build", args)
 
-    def lightdash_start_preview(self, ctx, select, preview_name, l43):
-        # Check to make sure the LIGHTDASH_PROJECT env variable is set
-        if not os.getenv("LIGHTDASH_PROJECT"):
-            print(
-                "LIGHTDASH_PROJECT environment variable not set. Set this key to the ID of the project you will "
-                "promote charts to."
-            )
-            sys.exit(1)
-        else:
-            print(f"Building for LIGHTDASH_PROJECT: {os.getenv('LIGHTDASH_PROJECT')}")
-
-        self._check_lightdash_for_updates()
-        if not preview_name:
-            # If no preview name, use the current name of the git branch
-            result = subprocess.run(
-                ["git", "branch", "--show-current"], stdout=subprocess.PIPE, text=True
-            )
-            preview_name = result.stdout.strip()
-
-        args = ["lightdash", "start-preview", "--name", preview_name]
-
-        if l43:
-            args = args + ["-s", "tag:l3 tag:l4"]
-
-        if select:
-            args = args + ["--select", select]
-
-        try:
-            print(f'Running command: {" ".join(args)}')
-            subprocess.run(args, check=True)
-        except subprocess.CalledProcessError as e:
-            self.handle_cmd_line_error(e)
-
-    @staticmethod
-    def _check_lightdash_for_updates():
-        api_str = 'curl -s "https://app.lightdash.cloud/api/v1/health"'
-
-        try:
-            result = subprocess.run(
-                api_str, shell=True, check=True, text=True, capture_output=True
-            )
-            # Convert to JSON
-            result_json = json.loads(result.stdout)
-        except subprocess.CalledProcessError as e:
-            print(f"Failure while running command: {api_str}")
-            print(e.stderr)
-            print(e.stdout)
-            sys.exit(e.returncode)
-
-        api_version = result_json["results"]["version"]
-
-        result = subprocess.run(
-            ["lightdash", "--version"], check=True, text=True, capture_output=True
-        )
-
-        current_version = result.stdout.strip()
-
-        if api_version != current_version:
-            print(
-                f"API version {api_version} does not match current version {current_version}. Upgrading."
-            )
-            args = ["npm", "install", "-g", f"@lightdash/cli@{api_version}"]
-            subprocess.run(args, check=True)
-        else:
-            print(
-                f"API version {api_version} matches current version {current_version}."
-            )
-
-    def pre_commit(self, ctx):
-        args = ["pre-commit", "run", "--all-files"]
-
-        try:
-            subprocess.run(args, check=True)
-        except subprocess.CalledProcessError as e:
-            self.handle_cmd_line_error(e)
-
-    def format(self, ctx: Context, select, all=False, main=False):
-        """
-        Scan for files that have changed since the last commit and pass them to sqlfluff fix command for cleanup.
-
-        Args:
-            ctx: Context object.
-        """
-        print("Scanning for changed files since last commit.")
-        # Set the env path to the .sqlfluffignore
-        os.environ["SQLFLUFF_CONFIG"] = "../.sqlfluffignore"
-        try:
-            if main:
-                # Check against main.
-                result = subprocess.run(
-                    ["git", "diff", "--name-only", "main"],
-                    stdout=subprocess.PIPE,
-                    text=True,
-                    check=True,
-                )
-            else:
-                # Check against last commit.
-                result = subprocess.run(
-                    ["git", "diff", "--name-only"],
-                    stdout=subprocess.PIPE,
-                    text=True,
-                    check=True,
-                )
-            changed_files = result.stdout.splitlines()
-        except subprocess.CalledProcessError as e:
-            print(f'Failure while running git command: {" ".join(e.cmd)}')
-            print(e.stderr)
-            print(e.stdout)
-            sys.exit(e.returncode)
-
-        # Filter SQL files
-        sql_files = [file for file in changed_files if file.endswith(".sql")]
-
-        # Filter out any files that are not in the models directory
-        sql_files = [file for file in sql_files if "models" in file]
-
-        if not sql_files and not all:
-            print("No SQL files have changed since the last commit.")
-            return
-
-        if all:
-            sql_files = ["./models"]
-
-        for sql_file in sql_files:
-            try:
-                print(f"Running sqlfluff fix on {sql_file}")
-                subprocess.run(
-                    ["sqlfluff", "fix", sql_file, "--config", "../.sqlfluff"],
-                    check=True,
-                )
-            except subprocess.CalledProcessError as e:
-                print(f"Failure while running sqlfluff fix command on {sql_file}")
-                print(e.stderr)
-                print(e.stdout)
-                # Optionally, we might not want to exit immediately but continue fixing other files
-                # sys.exit(e.returncode)
-
-        print("Sqlfluff fix completed for all changed SQL files.")
-
     def execute_state_based_build(
         self,
         ctx: Context,
@@ -536,28 +328,7 @@ class ColdBoreCapitalDBT:
                     break
         return full_refresh
 
-    def dbt_ls_to_json(self, args):
-        cmd = ["dbt", "ls", "--output", "json"]
-        cmd = cmd + args
-        try:
-            if self.test_mode:
-                output = self.dbt_ls_test_mode_output
-            else:
-                output = subprocess.run(
-                    cmd, check=True, text=True, capture_output=True
-                ).stdout
-        except subprocess.CalledProcessError as e:
-            print(e.stderr)
-            print(e.stdout)
-            print(" ".join(cmd))
-            sys.exit(e.returncode)
-        # The results come back with a few header lines that need to be removed, then a series of JSON string with a
-        # format like: {"name": "active_patient_metrics", "resource_type": "model", "config":
-        # {"materialized": "incremental"}} RE removes the header stuff and finds the json lines.
-        json_lines = re.findall(r"^{.*$", output, re.MULTILINE)
-        # Split lines and filter to get only JSON strings
-        models_json = [json.loads(line) for line in json_lines]
-        return models_json
+
 
     @staticmethod
     def _create_common_args(flags: t.Dict[str, t.Any]) -> t.List[str]:
@@ -586,28 +357,6 @@ class ColdBoreCapitalDBT:
         shutil.move(manifest_artifact_path, manifest_path)
         sys.exit(e.returncode)
 
-    @staticmethod
-    def execute_dbt_command_capture(command: str, args: t.List[str]) -> str:
-        """
-        Executes a DBT command and captures the output without streaming to the stdout.
-        Args:
-            command: The DBT command to run.
-            args: A list of args to pass into the command.
-
-        Returns:
-            A string containing the results of the command.
-        """
-        cmd = ["dbt", command] + args
-        try:
-            output = subprocess.run(
-                cmd, check=True, text=True, capture_output=True
-            ).stdout
-        except subprocess.CalledProcessError as e:
-            print(f'Failure while running command: {" ".join(cmd)}')
-            print(e.stderr)
-            print(e.stdout)
-            sys.exit(e.returncode)
-        return output
 
     def execute_dbt_command_stream(self, command: str, args: t.List[str]) -> bool:
         """
@@ -702,10 +451,8 @@ class DbtError(Exception):
 
 
 class MockCtx(Context):
-    def __init__(
-        self,
-        command: t.Optional["Command"] = None,
-    ) -> None:
+    def __init__(self, command: t.Optional["Command"] = None) -> None:
+        super().__init__(command)
         self.obj = {
             "build_children": False,
             "build_children_count": None,
@@ -726,5 +473,5 @@ if __name__ == "__main__":
     # cdbt.sbuild(ctx=None, full_refresh=False)
     # cdbt.pbuild(ctx=MockCtx(Command('Duck')), full_refresh=False)
     # cdbt.gbuild(ctx=mock_ctx, full_refresh=False, threads=8)
-    cdbt.format(ctx=mock_ctx, select=None, all=True, main=False)
+    # cdbt.format(ctx=mock_ctx, select=None, all=True, main=False)
     sys.exit(0)

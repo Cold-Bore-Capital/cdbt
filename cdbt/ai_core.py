@@ -3,45 +3,26 @@ import re
 import subprocess
 from typing import Dict
 from typing import List
+from snowflake.connector import DatabaseError
 
-import snowflake.connector as snow
-from dotenv import find_dotenv
-from dotenv import load_dotenv
-
-from cdbt.main import ColdBoreCapitalDBT
+from cdbt.core import Core
 from cdbt.prompts import Prompts
 
-load_dotenv(find_dotenv("../.env"))
-load_dotenv(find_dotenv(".env"))
+
 # Have to load env before import openai package.
 # flake8: noqa: E402
 import openai
 
 
-class AiCore:
+class AiCore(Core):
 
-    def __init__(self, model: str = "o1-mini"):
+    def __init__(self, model: str = "o1-mini", test_mode: bool = False):
+        super().__init__(test_mode=test_mode)
         self.model = model
         # Make sure you have OPENAI_API_KEY set in your environment variables.
         self.client = openai.OpenAI()
 
         self.prompts = Prompts()
-        self._conn = None
-        self._cur = None
-        self._create_snowflake_connection()
-
-    def _create_snowflake_connection(self):
-        self._conn = snow.connect(
-            account=os.environ.get("DATACOVES__MAIN__ACCOUNT"),
-            password=os.environ.get("DATACOVES__MAIN__PASSWORD"),
-            schema=os.environ.get("DATACOVES__MAIN__SCHEMA"),
-            user=os.environ.get("DATACOVES__MAIN__USER"),
-            warehouse=os.environ.get("DATACOVES__MAIN__WAREHOUSE"),
-            database=os.environ.get("DATACOVES__MAIN__DATABASE"),
-            role=os.environ.get("DATACOVES__MAIN__ROLE"),
-        )
-
-        self._cur = self._conn.cursor()
 
     def send_message(self, _messages: List[Dict[str, str]]) -> object:
         print("Sending to API")
@@ -54,22 +35,6 @@ class AiCore:
     def read_file(path: str) -> str:
         with open(path, "r") as file:
             return file.read()
-
-    def _get_file_path(self, model_name):
-        cdbt_main = ColdBoreCapitalDBT()
-        # This will get the path of the model. note, that unit tests show up as models, so must be excluded via the folder.
-        #
-        args = [
-            "--select",
-            model_name,
-            "--exclude",
-            "path:tests/* resource_type:test",
-            "--output-keys",
-            "original_file_path",
-        ]
-        model_ls_json = cdbt_main.dbt_ls_to_json(args)
-        file_path = model_ls_json[0]["original_file_path"]
-        return file_path
 
     @staticmethod
     def is_file_committed(file_path):
@@ -92,28 +57,27 @@ class AiCore:
             # The file is either untracked or does not exist
             return False
 
-    def _get_sample_data_from_snowflake(self, model_names: List[str]):
+    def _get_sample_data_from_snowflake(self, model_names: List[str]) -> Dict[str, str]:
         """
         Compiles the target model to SQL, then breaks out each sub query and CTE into a separate SQL strings, executing
         each to get a sample of the data.
         Args:
-            model_name: A list of target model names to pull sample data from.
+            model_names: A list of target model names to pull sample data from.
 
         Returns:
-
+            A dictionary of model names and their sample data in CSV format.
         """
-        cdbt_main = ColdBoreCapitalDBT()
         sample_results = {}
         for model_name in model_names:
             print(f"Getting sample data for {model_name}")
             args = ["--select", model_name]
             cmd = "compile"
-            results = cdbt_main.execute_dbt_command_capture(cmd, args)
+            results = self.execute_dbt_command_capture(cmd, args)
             extracted_sql = self.extract_sql(results)
             sample_sql = self.build_sample_sql(extracted_sql)
             try:
                 self._cur.execute(sample_sql)
-            except snow.DatabaseError as e:
+            except DatabaseError as e:
                 print(f"Error executing sample SQL for {model_name}")
                 print(e)
                 print("\n\n" + sample_sql + "\n\n")

@@ -8,6 +8,10 @@ from cdbt.cbc_sql_standards_system import SQLModelCleaner
 from cdbt.main import ColdBoreCapitalDBT
 from cdbt.pop_yaml_gen import BuildCBCUtilsYAML
 from cdbt.sort_yaml_fields import SortYAML
+from cdbt.lightdash import Lightdash
+from cdbt.precommit_format import PrecommitFormat
+from cdbt.recce import Recce
+from cdbt.expectations_output_builder import ExpectationsOutputBuilder
 
 cdbt_class = ColdBoreCapitalDBT()
 
@@ -61,6 +65,9 @@ class CustomCmdLoader(click.Group):
             "pop-yaml",
             "ma-yaml",
             "sort-yaml",
+            "recce",
+            "expectations",
+            "format",
         ]
 
 
@@ -158,7 +165,7 @@ def clip_compile(ctx, select):
 @click.pass_context
 def recce(ctx):
     """Run a recce of the current state of the project."""
-    cdbt_class.recce(ctx)
+    Recce().recce(ctx)
 
 
 @cdbt.command()
@@ -205,7 +212,7 @@ def pbuild(ctx, full_refresh, threads, skip_dl):
     "-m",
     is_flag=True,
     help="Build all models vs diff to the main branch. Make sure to pull main so it"
-    "s up-to-date.",
+         "s up-to-date.",
 )
 @click.option(
     "--full-refresh",
@@ -274,28 +281,7 @@ def build_unit(ctx, select):
 def ld_preview(ctx, select, name, l43):
     """Start a lightdash preview for a model."""
     preview_name = name
-    cdbt_class.lightdash_start_preview(ctx, select, preview_name, l43)
-
-
-@cdbt.command()
-@click.option(
-    "--select",
-    "-s",
-    type=str,
-    help="Name of the model(s) to format. Takes precidence over --all and --main.",
-)
-@click.option("--all", "-a", is_flag=True, help="Format all models.")
-@click.option(
-    "--main",
-    "-m",
-    is_flag=True,
-    help="Format all models vs diff to the main branch. Make sure to pull main so it"
-    "s up-to-date.",
-)
-@click.pass_context
-def format(ctx, select, all, main):
-    """Format models using sqlfluff."""
-    cdbt_class.format(ctx, select, all, main)
+    Lightdash().lightdash_start_preview(ctx, select, preview_name, l43)
 
 
 @cdbt.command()
@@ -361,4 +347,38 @@ def sort_yaml(select, all_files, overwrite):
 @click.pass_context
 def pre_commit(ctx):
     """Run pre-commit hooks."""
-    cdbt_class.pre_commit(ctx)
+    PrecommitFormat().pre_commit(ctx)
+
+
+@cdbt.command()
+@click.option(
+    "--select",
+    "-s",
+    type=str,
+    help="Name of the model(s) to format. Takes precidence over --all and --main.",
+)
+@click.option("--all", "-a", is_flag=True, help="Format all models.")
+@click.option(
+    "--main",
+    "-m",
+    is_flag=True,
+    help="Format all models vs diff to the main branch. Make sure to pull main so it"
+         "s up-to-date.",
+)
+@click.pass_context
+def format(ctx, select, all, main):
+    """Format models using sqlfluff."""
+    PrecommitFormat().format(ctx, select, all, main)
+
+@cdbt.command()
+@click.option(
+    "--select",
+    "-s",
+    type=str,
+    help="Name of the model(s) to format. Takes precidence over --all and --main.",
+)
+@click.pass_context
+def expectations(ctx, select):
+    """Build expectations for models."""
+    expectations_output_builder = ExpectationsOutputBuilder()
+    expectations_output_builder.main(select)

@@ -27,7 +27,7 @@ class BuildUnitTestDataAI(AiCore):
 
     def main(self, model_name: str):
 
-        file_path = self._get_file_path(model_name)
+        file_path = self.get_file_path(model_name)
         # Extract the folder immediately after 'models'. Not sure I need to use this just yet, holding on to it for
         # later.
         layer_name = file_path.split("/")[1][:2]

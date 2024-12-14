@@ -49,7 +49,7 @@ Primary DBT Guidelines:
             dimension:
               type: date
               label: "Order Date"
-              time_intervals: [ "DAY", "WEEK", "MONTH", "QUARTER" ]
+              time_intervals: ["DAY", "WEEK", "MONTH", "QUARTER"]
         ```
         If the name of the field contains "month", exclude "DAY", and "WEEK". If it contains "YEAR", exclude "DAY", "WEEK", and "MONTH".
 
@@ -182,7 +182,7 @@ models:
         meta:
           dimension:
             type: date
-            time_intervals: [ "DAY", "WEEK", "MONTH", "QUARTER" ]
+            time_intervals: ["DAY", "WEEK", "MONTH", "QUARTER"]
 
       - name: location_id
         description: "The identifier for the location where the order was placed."
