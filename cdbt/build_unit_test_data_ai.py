@@ -23,7 +23,7 @@ logging.getLogger("snowflake.connector").setLevel(logging.WARNING)
 class BuildUnitTestDataAI(AiCore):
 
     def __init__(self):
-        super().__init__(model="o1-preview")
+        super().__init__(model="o1")
 
     def main(self, model_name: str):
 
@@ -126,4 +126,4 @@ Here is sample data for each input model. This just represents a random sample. 
 
 
 if __name__ == "__main__":
-    BuildUnitTestDataAI().main("appointment_revenue_mrpv_metrics")
+    BuildUnitTestDataAI().main("avg_client_rev_per_year")
