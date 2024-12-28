@@ -349,7 +349,7 @@ Use this line for the dbt_unit_tests.test (name is filled in) `{{% call dbt_unit
 
 {{% call dbt_unit_testing.test('model_name', 'Description of Test') %}}
 
-    {{% call dbt_unit_testing.mock_ref('fct_order_items_mat', options={"input_format": "csv"}) %}}
+    {{% call dbt_unit_testing.mock_ref('fct_order_items_mat', options={{"input_format": "csv"}}) %}}
 
     ORDER_ITEM_AT                          |LOCATION_ID |IS_MEDICAL_REVENUE |IS_PLAN_PAYMENT |LOCATION_NAME | PRODUCT_TYPE_NAME    | TOTAL_BEFORE_TAX
     '2024-01-01 00:00:00.000000000 -08:00' |123         |TRUE               |TRUE            |'ABC123'      | 'Product 1'          | 25
@@ -364,7 +364,7 @@ Use this line for the dbt_unit_tests.test (name is filled in) `{{% call dbt_unit
 
     {{% endcall %}}
 
-    {{% call dbt_unit_testing.expect({"input_format": "csv"}) %}}
+    {{% call dbt_unit_testing.expect({{"input_format": "csv"}}) %}}
 
     REVENUE_DAY_AT |LOCATION_ID |IS_MEDICAL_REVENUE |IS_PLAN_PAYMENT |LOCATION_NAME  |PRODUCT_TYPE_NAME |REVENUE_SUM
     '2024-01-01'   |123         |TRUE               |TRUE            |'ABC123'       |'Product 1'       |50
