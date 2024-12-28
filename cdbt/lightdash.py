@@ -3,15 +3,20 @@ import os
 import subprocess
 import sys
 import typing as t
+
 from click.core import Context
+
 from cdbt.core import Core
+
 
 class Lightdash(Core):
 
     def __init__(self, test_mode=False):
         super().__init__(test_mode=test_mode)
 
-    def lightdash_start_preview(self, ctx: Context, select:str, preview_name:str, l43:bool):
+    def lightdash_start_preview(
+        self, ctx: Context, select: str, preview_name: str, l43: bool
+    ):
         # Check to make sure the LIGHTDASH_PROJECT env variable is set
         if not os.getenv("LIGHTDASH_PROJECT"):
             print(

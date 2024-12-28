@@ -1,17 +1,18 @@
-import snowflake.connector as snow
 import json
 import os
 import re
-import typing as t
 import shutil
 import subprocess
 import sys
+import typing as t
 
+import snowflake.connector as snow
 from dotenv import find_dotenv
 from dotenv import load_dotenv
 
 load_dotenv(find_dotenv("../.env"))
 load_dotenv(find_dotenv(".env"))
+
 
 class Core:
 
@@ -84,7 +85,6 @@ class Core:
             print(e.stdout)
             sys.exit(e.returncode)
         return output
-
 
     def get_file_path(self, model_name):
         # This will get the path of the model. note, that unit tests show up as models, so must be excluded via the folder.

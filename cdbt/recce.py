@@ -5,8 +5,11 @@ import shutil
 import subprocess
 import sys
 import typing as t
+
 from click.core import Context
+
 from cdbt.core import Core
+
 
 class Recce(Core):
 
@@ -65,4 +68,3 @@ class Recce(Core):
                 subprocess.run(["recce", "server"], check=True)
         except subprocess.CalledProcessError as e:
             self.handle_cmd_line_error(e)
-

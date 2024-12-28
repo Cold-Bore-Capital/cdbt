@@ -5,13 +5,13 @@ import click
 from cdbt.build_dbt_docs_ai import BuildDBTDocs
 from cdbt.build_unit_test_data_ai import BuildUnitTestDataAI
 from cdbt.cbc_sql_standards_system import SQLModelCleaner
+from cdbt.expectations_output_builder import ExpectationsOutputBuilder
+from cdbt.lightdash import Lightdash
 from cdbt.main import ColdBoreCapitalDBT
 from cdbt.pop_yaml_gen import BuildCBCUtilsYAML
-from cdbt.sort_yaml_fields import SortYAML
-from cdbt.lightdash import Lightdash
 from cdbt.precommit_format import PrecommitFormat
 from cdbt.recce import Recce
-from cdbt.expectations_output_builder import ExpectationsOutputBuilder
+from cdbt.sort_yaml_fields import SortYAML
 
 cdbt_class = ColdBoreCapitalDBT()
 
@@ -212,7 +212,7 @@ def pbuild(ctx, full_refresh, threads, skip_dl):
     "-m",
     is_flag=True,
     help="Build all models vs diff to the main branch. Make sure to pull main so it"
-         "s up-to-date.",
+    "s up-to-date.",
 )
 @click.option(
     "--full-refresh",
@@ -363,12 +363,13 @@ def pre_commit(ctx):
     "-m",
     is_flag=True,
     help="Format all models vs diff to the main branch. Make sure to pull main so it"
-         "s up-to-date.",
+    "s up-to-date.",
 )
 @click.pass_context
 def format(ctx, select, all, main):
     """Format models using sqlfluff."""
     PrecommitFormat().format(ctx, select, all, main)
+
 
 @cdbt.command()
 @click.option(

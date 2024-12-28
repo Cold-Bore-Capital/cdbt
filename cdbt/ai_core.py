@@ -3,15 +3,14 @@ import re
 import subprocess
 from typing import Dict
 from typing import List
+
+import openai
 from snowflake.connector import DatabaseError
 
 from cdbt.core import Core
 from cdbt.prompts import Prompts
-
-
 # Have to load env before import openai package.
 # flake8: noqa: E402
-import openai
 
 
 class AiCore(Core):
@@ -84,7 +83,7 @@ class AiCore(Core):
                 raise e
             tmp_df = self._cur.fetch_pandas_all()
             sample_results[model_name] = tmp_df.to_csv(index=False)
-        print(f'Sample results: {sample_results}')
+        print(f"Sample results: {sample_results}")
         return sample_results
 
     @staticmethod
