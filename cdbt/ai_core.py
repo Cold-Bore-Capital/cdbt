@@ -84,7 +84,7 @@ class AiCore(Core):
                 raise e
             tmp_df = self._cur.fetch_pandas_all()
             sample_results[model_name] = tmp_df.to_csv(index=False)
-
+        print(f'Sample results: {sample_results}')
         return sample_results
 
     @staticmethod
