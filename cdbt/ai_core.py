@@ -9,6 +9,7 @@ from snowflake.connector import DatabaseError
 
 from cdbt.core import Core
 from cdbt.prompts import Prompts
+
 # Have to load env before import openai package.
 # flake8: noqa: E402
 
