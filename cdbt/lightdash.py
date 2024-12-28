@@ -2,7 +2,6 @@ import json
 import os
 import subprocess
 import sys
-import typing as t
 
 from click.core import Context
 

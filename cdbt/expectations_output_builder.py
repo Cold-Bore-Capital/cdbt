@@ -37,10 +37,10 @@ class ExpectationsOutputBuilder(Core):
             for data_test in data_tests:
                 if isinstance(data_test, dict):
                     for expectation_name, expectation_params in data_test.items():
-                        if (
-                            expectation_name
-                            == "dbt_expectations.expect_column_sum_to_be_between"
-                        ):
+                        # fmt: off
+                        expectation_pattern = "dbt_expectations.expect_column_sum_to_be_between"
+                        # fmt: on
+                        if expectation_name == expectation_pattern:
                             min_value = expectation_params.get("min_value")
                             max_value = expectation_params.get("max_value")
                             row_condition = expectation_params.get("row_condition", "")

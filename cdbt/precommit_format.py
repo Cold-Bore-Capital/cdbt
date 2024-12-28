@@ -1,13 +1,7 @@
-import json
 import os
-import re
-import shutil
 import subprocess
 import sys
-import typing as t
 
-import pyperclip
-from click.core import Command
 from click.core import Context
 
 from cdbt.core import Core
