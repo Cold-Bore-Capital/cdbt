@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name="cdbt",
-    version="0.4.16",
+    version="0.4.19",
     description="A CLI tool to manage dbt builds with state handling and manifest management",
     author="Craig Lathrop",
     author_email="development@coldborecapital.com",
