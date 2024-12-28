@@ -66,7 +66,7 @@ class CustomCmdLoader(click.Group):
             "ma-yaml",
             "sort-yaml",
             "recce",
-            "expectations",
+            "exp",
             "format",
         ]
 
@@ -378,7 +378,7 @@ def format(ctx, select, all, main):
     help="Name of the model(s) to format. Takes precidence over --all and --main.",
 )
 @click.pass_context
-def expectations(ctx, select):
+def exp(ctx, select):
     """Build expectations for models."""
     expectations_output_builder = ExpectationsOutputBuilder()
     expectations_output_builder.main(select)
