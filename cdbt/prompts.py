@@ -26,7 +26,8 @@ Primary DBT Guidelines:
     10. If modifying an existing YML, leave the value of materialized as is. Do not change it to `table` if it is `view` or vice versa.
     11. The acronym PoP stands for "period over period". This will be some form of lookback or comparison to a prior period.
     12. The acronym MA stands for Moving Average. This will be some sort of moving average of days, or weeks.
-    13. Lightdash portion details:
+    13. Use lowercase for all column names, metric, and dimension names. The sample data will come back with uppercase column names, but the YML file should have lowercase names.
+    14. Lightdash portion details:
 
         We are using the lightdash system. This appends additional data to the columns of the YML file in a field called meta. For all fields, the following process should be followed. For all label values, title case should be used:
         1. If updating an existing YML and the meta parameter already exists, do not modify anything in the meta parameter. Modify other items as needed.
@@ -265,7 +266,8 @@ Primary DBT Guidelines:
     9. Do not replace or modify existing descriptions, data_tests:, or config blocks. Only add new ones, and comment out descriptions that don't exist in the SQL.
     10. Reorder or order the column descriptions in the YML file in the same order they appear in the SQL query. If you are modifying an existing YML file, still re-order the elements, don't comment out the old element location and put a new element in.
     11. If modifying an existing YML, leave the value of materialized as is. Do not change it to `table` if it is `view` or vice versa.
-    12. Lightdash portion details:
+    12. Use lowercase for all column names, metric, and dimension names. The sample data will come back with uppercase column names, but the YML file should have lowercase names.
+    13. Lightdash portion details:
 
         We are using the lightdash system. This appends additional data to the columns of the YML file. As this is a file in the L1 or L2 layer, we are just going to add a simple meta block to the top with the following code:
         ```

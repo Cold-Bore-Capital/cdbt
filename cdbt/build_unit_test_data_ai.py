@@ -23,7 +23,7 @@ logging.getLogger("snowflake.connector").setLevel(logging.WARNING)
 class BuildUnitTestDataAI(AiCore):
 
     def __init__(self):
-        super().__init__(model="o1")
+        super().__init__(model="o1-preview")
 
     def main(self, model_name: str):
 
