@@ -21,7 +21,7 @@ Primary DBT Guidelines:
     5. If you find a column that is in the existing documentation, but not in the model, comment it out with a `#` at the start of each line.
     6. Only return the YML documentation file contents. Do not provide an explanation.
     7. Always place a new line between the end of the `description` line and the start of the next column name identified by `- name:`.
-    8. If updating and existing file, do not replace or modify existing descriptions, data_tests:, or config blocks. Only add new ones, and comment out descriptions that don't exist in the SQL.
+    8. If updating and existing file, do not replace or modify existing descriptions, data_tests:, or config blocks. Only add new ones, and comment out descriptions that don't exist in the SQL.  use data_tests:, not tests:
     9. Reorder or order the column descriptions in the YML file in the same order they appear in the SQL query. If you are modifying an existing YML file, still re-order the elements, don't comment out the old element location and put a new element in.
     10. If modifying an existing YML, leave the value of materialized as is. Do not change it to `table` if it is `view` or vice versa.
     11. The acronym PoP stands for "period over period". This will be some form of lookback or comparison to a prior period.
@@ -44,7 +44,7 @@ Primary DBT Guidelines:
         ```
         - name: order_at
           description: "The date associated with the order."
-           data_tests:
+          data_tests:
             - not_null
           meta:
             dimension:
@@ -178,7 +178,7 @@ models:
     columns:
       - name: order_at
         description: "The date associated with the order."
-         data_tests:
+        data_tests:
           - not_null
         meta:
           dimension:
@@ -251,7 +251,7 @@ Primary DBT Guidelines:
         a. Set `materialized` to `view`
         b. Do not include a `sort` key.
         c. If the model name ends in `_mat` set materialized to `table`.
-    4. Add data_tests: `unique` and `not_null` to the primary key only. Do not add data_tests: to any other columns.
+    4. Add data_tests: `unique` and `not_null` to the primary key only. Do not add data_tests: to any other columns. use data_tests:, not tests:
     5. For long descriptions, use the following format so the lines are not too long:
         ```
         - name: replacement_plan_id
