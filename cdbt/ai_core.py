@@ -16,7 +16,7 @@ from cdbt.prompts import Prompts
 
 class AiCore(Core):
 
-    def __init__(self, model: str = "o1-mini", test_mode: bool = False):
+    def __init__(self, model: str = "o3-mini", test_mode: bool = False):
         super().__init__(test_mode=test_mode)
         self.model = model
         # Make sure you have OPENAI_API_KEY set in your environment variables.
